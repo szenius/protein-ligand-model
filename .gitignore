@@ -1,5 +1,6 @@
-# Training data
-training_data/*
+# Others
+*training_data/*
+.vscode/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
