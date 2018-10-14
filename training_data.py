@@ -10,6 +10,15 @@ def get_training_data(
     training_data_dir_path = os.path.abspath('./training_data'),
     training_data_pkl_path = os.path.abspath('./training_data.pkl'),
     reprocess=False):
+    '''
+    Args:
+        training_data_dir_path (str):  the training_data directory.
+        training_data_pkl_path (str):  the serialized training data file path.
+        reprocess (boolean):  whether or not tp ignore serialized training data and reprocessed raw training data.
+
+    Returns: 
+        training data (list): [protein data, ligand data, labels]
+    '''
     # If reprocessing training data or pkl does not exist
     if reprocess or not os.path.exists(training_data_pkl_path):
         training_data = generate_training_data(training_data_dir_path)
@@ -20,6 +29,16 @@ def get_training_data(
         return load_pickle(training_data_pkl_path)
 
 def generate_training_data(training_data_dir_path):
+    '''
+    Args:
+        training_data_dir_path (str): the training_data directory.
+
+    Returns: 
+        x_protein (list): training data for protein features.
+        x_ligand (list): training data for ligand features.
+        y (list): groundtruth labels.
+        Where for the same index position in the respective lists, the corresponding triplet is a training example.
+    '''
     ############################ Helper functions ############################
     def generate_negative_examples(protein_data, ligand_data, num=1):
         """Generate num negative pairings for each protein"""
@@ -57,17 +76,17 @@ def generate_training_data(training_data_dir_path):
     x_protein = x_pos_protein + x_neg_protein
     x_ligand = x_pos_ligand + x_neg_ligand
     y = y_pos + y_neg
-    return x_protein, x_ligand, y 
+    return x_protein, x_ligand, y
 
 def load_data(dir_path):
     '''
     Args:
-        dir_path (str):  directory to the training_data directory dir_path.
+        dir_path (str): the training_data directory.
 
     Returns: 
-        protein_data: [[protein_x_list, protein_y_list, protein_z_list, protein_type_list], ... ]
-        ligand_data: [[ligand_x_list, ligand_y_list, ligand_z_list, ligand_type_list], ... ]
-        Where for the same index position in the respective lists, the corresponding protein and ligand is a pair
+        protein_data (list): [[protein_x_list, protein_y_list, protein_z_list, protein_type_list], ... ].
+        ligand_data (list): [[ligand_x_list, ligand_y_list, ligand_z_list, ligand_type_list], ... ].
+        Where for the same index position in the respective lists, the corresponding protein and ligand is a receptive pair.
     '''
     ############################ Helper functions ############################
     def get_index(filename):
