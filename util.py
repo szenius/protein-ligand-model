@@ -1,4 +1,23 @@
 import numpy as np
+import csv
+import os
+
+def format_abspath(file_path):
+    return os.path.join(os.path.abspath(file_path), '') # automatically adds trailing / for directory
+
+def write_csv(rows, output_path, header=None, delimiter=','):
+  """Writes out rows to csv file given output path"""
+  with open(output_path, 'w') as csvfile:
+    out_writer = csv.writer(csvfile, delimiter=delimiter)
+    if header:
+      out_writer.writerow(header)
+    for row in rows:
+      out_writer.writerow(row)
+
+def read_lines(file_path):
+    with open(file_path, 'r') as f:
+        return f.readlines()
+
 def format_training_data(pairs, rows=1000):
     '''
     Key Arguments:
@@ -13,11 +32,11 @@ def format_training_data(pairs, rows=1000):
         rows -- use this to fix the first dimension for the return array
     
     Returns:
-        4d array of size num_pairs x 2 x rows x 4
-            axis1: number of protein-ligand pairs
-            axis2: protein, ligand
-            axis3: rows
-            axis4: columns represent x, y, z, type for each atom
+        array of shape: num_pairs x 2 x rows x 4
+            axis1: dim = number of protein-ligand pairs, each is a protein-ligand pair
+            axis2: dim = 2, each is either protein or ligand for the pair
+            axis3: dim = number of atoms, each is an atom for the protein/ligand
+            axis4: dim = 4, each represent x, y, z, type for the atom of the protein/ligand
     '''
     result = []
     for pair in pairs:
@@ -53,26 +72,24 @@ def load_training_data(dir_path, data_size=3000):
             ]
         labels -- 0 or 1 for not a pair, or pair
     '''
-    if dir_path[-1] != '/':
-        dir_path += '/'
+
+    dir_path = format_abspath(dir_path)
 
     pairs = []
     labels = []
     for id in range(1, data_size + 1):
-        id_string = pad_with_zeroes(id, 4)
+        id_string = pad_left(str(id), '0', 4)
         pfilename = dir_path + id_string + '_pro_cg.pdb'
         lfilename = dir_path + id_string + '_lig_cg.pdb'
         pairs.append([read_complex(pfilename), read_complex(lfilename)])
         labels.append(1)
     return pairs, labels
         
-def read_complex(filename):
+def read_complex(file_path):
     # Read atom data from file
-    with open(filename, 'r') as f:
-        content = f.readlines()
-    content = [x.strip() for x in content]
+    content = [x.strip() for x in read_lines(file_path)]
     
-    # Construct Molecule from atom data
+    # Construct molecule from atom data
     x_list = []
     y_list = []
     z_list = []
@@ -83,15 +100,11 @@ def read_complex(filename):
         y_list.append(float(line[38:46].strip()))
         z_list.append(float(line[46:54].strip()))
 
-        type = line[76:78].strip()
-        if type == 'C':
-            type_list.append(0) # hydrophobic
-        else:
-            type_list.append(1) # polar
+        atom_type = line[76:78].strip()
+        hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
+        type_list.append(hydrophobicity)
+
     return [x_list, y_list, z_list, type_list]
 
-def pad_with_zeroes(num, target_size):
-    result = str(num)
-    while len(result) < target_size:
-        result = '0' + result
-    return result
+def pad_left(string, pad_char, target_width):
+    return pad_char * (target_width - len(string)) + string
