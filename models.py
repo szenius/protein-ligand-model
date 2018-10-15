@@ -67,7 +67,7 @@ def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), cla
     print(t.shape)
     t = GlobalMaxPooling1D()(t) # to ensure same output shape from the streams
     print(t.shape)
-    t = Flatten()(t) # TODO: Flatten layer can't take in variable input size. Need to ensure same output shape from streams.
+    t = Flatten()(t) # TODO: Error -- Flatten layer expects min_ndim=3, found ndim=2
 
     t = Dense(1024)(t)
     t = Activation('relu')(t)
