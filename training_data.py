@@ -103,22 +103,19 @@ def load_data(dir_path):
         # Read atom data from file
         content = [x.strip() for x in read_lines(file_path)]
 
-        # Construct molecule from atom data
-        x_list = []
-        y_list = []
-        z_list = []
-        type_list = []
+        # Construct complex from atom data
+        atoms = []
 
         for line in content:
-            x_list.append(float(line[30:38].strip()))
-            y_list.append(float(line[38:46].strip()))
-            z_list.append(float(line[46:54].strip()))
-
+            x = float(line[30:38].strip())
+            y = float(line[38:46].strip())
+            z = float(line[46:54].strip())
             atom_type = line[76:78].strip()
             hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
-            type_list.append(hydrophobicity)
 
-        return [x_list, y_list, z_list, type_list]
+            atoms.append([x, y, z, atom_type])
+
+        return atoms
 
     ############################## Function body #############################
     protein_data = []

@@ -1,6 +1,7 @@
 import keras
 from keras.models import Model
-from keras.layers import Input, Dense, Conv1D, Conv2D, Activation, MaxPool1D, MaxPool2D, Dropout, Flatten, LeakyReLU, concatenate, Reshape, GlobalMaxPooling1D
+from keras.layers import Input, Dense, Conv1D, Conv1D, Activation
+from keras.layers import MaxPool1D, MaxPool1D, Dropout, Flatten, LeakyReLU, concatenate, Reshape, GlobalMaxPooling1D
 
 def cnn(input_shape, class_num=1):
     """
@@ -18,9 +19,9 @@ def cnn(input_shape, class_num=1):
     im_input = Input(shape=input_shape)
 
     for i in range(3):
-        t = Conv2D(32, (3, 3), padding='valid')(im_input)
+        t = Conv1D(32, (3, 3), padding='valid')(im_input)
         t = Activation('relu')(t)
-        t = MaxPool2D(pool_size=(2,2), padding='valid')(t)
+        t = MaxPool1D(pool_size=(2,2), padding='valid')(t)
         t = Dropout(0.5)(t)
 
     t = Flatten()(t)
