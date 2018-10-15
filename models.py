@@ -1,6 +1,6 @@
 import keras
 from keras.models import Model
-from keras.layers import Input, Dense, Conv1D, Conv2D, Activation, MaxPool1D, MaxPool2D, Dropout, Flatten, LeakyReLU, concatenate, GlobalMaxPooling1D, GlobalMaxPooling2D
+from keras.layers import Input, Dense, Conv1D, Conv2D, Activation, MaxPool1D, MaxPool2D, Dropout, Flatten, LeakyReLU, concatenate, Reshape
 
 def cnn(input_shape, class_num=1):
     """
@@ -63,11 +63,9 @@ def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), cla
     protein_stream = protein_network(protein_input)
     ligand_stream = ligand_network(ligand_input)
 
-    t = concatenate([protein_stream, ligand_stream], axis=1)
-    print(t.shape)
-    t = GlobalMaxPooling1D()(t) # to ensure same output shape from the streams
-    print(t.shape)
-    t = Flatten()(t) # TODO: Error -- Flatten layer expects min_ndim=3, found ndim=2
+    t = concatenate([protein_stream, ligand_stream], axis=-1)
+    t = Reshape(target_shape=(1024,1024))(t) # TODO: explore ROI pooling. 1024 is arbitrary
+    t = Flatten()(t) 
 
     t = Dense(1024)(t)
     t = Activation('relu')(t)
