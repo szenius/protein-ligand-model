@@ -13,6 +13,6 @@ def main():
     model = dual_stream_cnn()
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
     history = model.fit(x=[x_protein, x_ligand], y=y, epochs=1, verbose=1)
-    print(history.history['acc'])
+    print(history.history['loss'], history.history['acc'])
 
 if __name__ == '__main__': main()

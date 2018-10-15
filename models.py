@@ -1,6 +1,6 @@
 import keras
 from keras.models import Model
-from keras.layers import Input, Dense, Conv1D, Conv2D, Activation, MaxPool1D, MaxPool2D, Dropout, Flatten, LeakyReLU, concatenate
+from keras.layers import Input, Dense, Conv1D, Conv2D, Activation, MaxPool1D, MaxPool2D, Dropout, Flatten, LeakyReLU, concatenate, GlobalMaxPooling1D, GlobalMaxPooling2D
 
 def cnn(input_shape, class_num=1):
     """
@@ -33,10 +33,8 @@ def cnn(input_shape, class_num=1):
     
     return model
 
-def dual_stream_cnn(protein_data_shape=(None,), ligand_data_shape=(None,), class_num=1):
-    # Note: None in shape denotes variable size
-    # TODO what is the shape??
-    # TODO is the class_num = 1 or 2?
+def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), class_num=1):
+    # Note: None in shape denotes variable size.
     # inspired by https://arxiv.org/pdf/1801.10193.pdf, https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/bty374/4994792
     # hidden neurons 1024; 1024; 512
     
@@ -64,8 +62,12 @@ def dual_stream_cnn(protein_data_shape=(None,), ligand_data_shape=(None,), class
     ligand_input = Input(shape=ligand_data_shape)
     protein_stream = protein_network(protein_input)
     ligand_stream = ligand_network(ligand_input)
-    t = concatenate([protein_stream, ligand_stream], axis=-1) # TODO which axis?
-    t = Flatten()(t) # TODO is this necessary?
+
+    t = concatenate([protein_stream, ligand_stream], axis=1)
+    print(t.shape)
+    t = GlobalMaxPooling1D()(t) # to ensure same output shape from the streams
+    print(t.shape)
+    t = Flatten()(t) # TODO: Flatten layer can't take in variable input size. Need to ensure same output shape from streams.
 
     t = Dense(1024)(t)
     t = Activation('relu')(t)
