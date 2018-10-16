@@ -124,7 +124,7 @@ def load_data(dir_path):
             y = float(line[38:46].strip())
             z = float(line[46:54].strip())
             atom_type = line[76:78].strip()
-            hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
+            hydrophobicity = 2 if atom_type == 'C' else 1 # 2 for hydrophobic, 1 for polar
             atoms.append([x, y, z, hydrophobicity])
 
         return atoms

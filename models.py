@@ -1,18 +1,21 @@
 import keras
 from keras.models import Model
-from keras.layers import Input, Dense, Conv1D, Conv1D, Activation
-from keras.layers import MaxPool1D, MaxPool1D, Dropout, Flatten, LeakyReLU, concatenate, Reshape, GlobalMaxPooling1D
+from keras.layers import Input, Dense, Conv1D, Activation, MaxPool1D, Dropout, Flatten, concatenate, GlobalMaxPooling1D
 
-def dual_stream_cnn(protein_data_shape=(1,None,4), ligand_data_shape=(1,None,4), class_num=1):
-    # Note: None in shape denotes variable size.
+def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), class_num=1):
+    # Note: None in shape denotes variable size
     # inspired by https://arxiv.org/pdf/1801.10193.pdf, https://academic.oup.com/bioinformatics/advance-article/doi/10.1093/bioinformatics/bty374/4994792
     # hidden neurons 1024; 1024; 512
     
     def protein_network(t):
         t = Conv1D(filters=32, kernel_size=4, padding='valid')(t)
         t = Activation('relu')(t)
+        t = MaxPool1D(pool_size=2, padding='valid')(t)
+
         t = Conv1D(filters=64, kernel_size=6, padding='valid')(t)
         t = Activation('relu')(t)
+        t = MaxPool1D(pool_size=2, padding='valid')(t)
+
         t = Conv1D(filters=96, kernel_size=8, padding='valid')(t)
         t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
@@ -21,15 +24,19 @@ def dual_stream_cnn(protein_data_shape=(1,None,4), ligand_data_shape=(1,None,4),
     def ligand_network(t):
         t = Conv1D(filters=32, kernel_size=4, padding='valid')(t)
         t = Activation('relu')(t)
+        t = MaxPool1D(pool_size=2, padding='valid')(t)
+
         t = Conv1D(filters=64, kernel_size=6, padding='valid')(t)
         t = Activation('relu')(t)        
+        t = MaxPool1D(pool_size=2, padding='valid')(t)
+
         t = Conv1D(filters=96, kernel_size=8, padding='valid')(t)
         t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
         return t
 
-    protein_input = Input(batch_shape=protein_data_shape, name='protein_input')
-    ligand_input = Input(batch_shape=ligand_data_shape, name='ligand_input')
+    protein_input = Input(shape=protein_data_shape, name='protein_input')
+    ligand_input = Input(shape=ligand_data_shape, name='ligand_input')
     protein_stream = protein_network(protein_input)
     ligand_stream = ligand_network(ligand_input)
 
