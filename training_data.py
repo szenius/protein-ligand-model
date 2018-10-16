@@ -112,10 +112,9 @@ def load_data(dir_path):
             z = float(line[46:54].strip())
             atom_type = line[76:78].strip()
             hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
+            atoms.append([[x], [y], [z], [hydrophobicity]])
 
-            atoms.append([x, y, z, atom_type])
-
-        return atoms
+        return atoms # 1 x 4 x n_atoms
 
     ############################## Function body #############################
     protein_data = []

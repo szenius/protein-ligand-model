@@ -40,27 +40,35 @@ def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), cla
     # hidden neurons 1024; 1024; 512
     
     def protein_network(t):
-        t = Conv1D(filters=32, kernel_size=4, padding='valid')(t)
-        t = Activation('relu')(t)
-        t = Conv1D(filters=64, kernel_size=8, padding='valid')(t)
-        t = Activation('relu')(t)
-        t = Conv1D(filters=96, kernel_size=12, padding='valid')(t)
+        t = Conv1D(filters=32, kernel_size=2, padding='valid')(t)
         t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
+
+        # t = Conv1D(filters=64, kernel_size=2, padding='valid')(t)
+        # t = Activation('relu')(t)
+        # t = MaxPool1D(pool_size=2, padding='valid')(t)
+
+        # t = Conv1D(filters=96, kernel_size=2, padding='valid')(t)
+        # t = Activation('relu')(t)
+        # t = MaxPool1D(pool_size=2, padding='valid')(t)
         return t
 
     def ligand_network(t):
-        t = Conv1D(filters=32, kernel_size=4, padding='valid')(t)
-        t = Activation('relu')(t)
-        t = Conv1D(filters=64, kernel_size=6, padding='valid')(t)
-        t = Activation('relu')(t)
-        t = Conv1D(filters=96, kernel_size=8, padding='valid')(t)
+        t = Conv1D(filters=32, kernel_size=2, padding='valid')(t)
         t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
+
+        # t = Conv1D(filters=64, kernel_size=2, padding='valid')(t)
+        # t = Activation('relu')(t)
+        # t = MaxPool1D(pool_size=2, padding='valid')(t)
+        
+        # t = Conv1D(filters=96, kernel_size=2, padding='valid')(t)
+        # t = Activation('relu')(t)
+        # t = MaxPool1D(pool_size=2, padding='valid')(t)
         return t
 
-    protein_input = Input(shape=protein_data_shape)
-    ligand_input = Input(shape=ligand_data_shape)
+    protein_input = Input(shape=protein_data_shape, name='protein_input')
+    ligand_input = Input(shape=ligand_data_shape, name='ligand_input')
     protein_stream = protein_network(protein_input)
     ligand_stream = ligand_network(ligand_input)
 
