@@ -34,9 +34,9 @@ def generate_training_data(training_data_dir_path):
         training_data_dir_path (str): the training_data directory.
 
     Returns: 
-        x_protein (list): training data for protein features.
-        x_ligand (list): training data for ligand features.
-        y (list): groundtruth labels.
+        x_protein (3d np array): training data for protein features.
+        x_ligand (3d np array): training data for ligand features.
+        y (1d np array): groundtruth labels.
         Where for the same index position in the respective lists, the corresponding triplet is a training example.
     '''
     ############################ Helper functions ############################
@@ -59,9 +59,17 @@ def generate_training_data(training_data_dir_path):
             x_neg_protein.append(protein)
             x_neg_ligand.append(neg_ligand)
         return x_neg_protein, x_neg_ligand, y_neg
+    
+    def pad_with_zeroes(data, max_length, num_features=4):
+        empty_row = [0 for x in range(num_features)]
+        for i in range(len(data)):
+            complex = data[i]
+            for j in range(max_length - len(complex)):
+                complex.append(empty_row)
+        return data
 
     ############################## Function body #############################
-    protein_data, ligand_data = load_data(training_data_dir_path)
+    protein_data, ligand_data, max_length = load_data(training_data_dir_path)
 
     # Positive examples
     x_pos_protein = protein_data
@@ -76,7 +84,12 @@ def generate_training_data(training_data_dir_path):
     x_protein = x_pos_protein + x_neg_protein
     x_ligand = x_pos_ligand + x_neg_ligand
     y = y_pos + y_neg
-    return x_protein, x_ligand, y
+
+    # Pad smaller complexes with zeroes
+    x_protein = pad_with_zeroes(x_protein, max_length)
+    x_ligand = pad_with_zeroes(x_ligand, max_length)
+
+    return np.array(x_protein), np.array(x_ligand), np.array(y)
 
 def load_data(dir_path):
     '''
@@ -97,7 +110,7 @@ def load_data(dir_path):
         ligand_path = os.path.join(dir_path, index + LIGAND_FILENAME_SUFFIX)
         protein = read_complex(protein_path)
         ligand = read_complex(ligand_path)
-        return protein, ligand
+        return protein, ligand, max(len(protein), len(ligand))
 
     def read_complex(file_path):
         # Read atom data from file
@@ -112,16 +125,18 @@ def load_data(dir_path):
             z = float(line[46:54].strip())
             atom_type = line[76:78].strip()
             hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
-            atoms.append([[x], [y], [z], [hydrophobicity]])
+            atoms.append([x, y, z, hydrophobicity])
 
-        return atoms # 1 x 4 x n_atoms
+        return atoms
 
     ############################## Function body #############################
     protein_data = []
     ligand_data = []
+    max_length = 0
     for protein_filename in ls(dir_path, lambda x: x.endswith(PROTEIN_FILENAME_SUFFIX)):
         index = get_index(protein_filename)
-        protein, ligand = get_pair(index)
+        protein, ligand, length = get_pair(index)
         protein_data.append(protein)
         ligand_data.append(ligand)
-    return protein_data, ligand_data
+        max_length = length if length > max_length else max_length
+    return protein_data, ligand_data, max_length
