@@ -4,6 +4,7 @@ from keras import optimizers, losses
 from models import mlp
 import numpy as np
 import os
+import matplotlib.pyplot as plt
 
 np.random.seed(0)
 set_random_seed(0)

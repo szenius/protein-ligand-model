@@ -2,7 +2,6 @@ from utils import ls, load_pickle, dump_pickle, read_lines
 import numpy as np
 import random
 import os
-import matplotlib.pyplot as plt
 
 PROTEIN_FILENAME_SUFFIX = '_pro_cg.pdb'
 LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb' 
