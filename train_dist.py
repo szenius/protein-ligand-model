@@ -1,13 +1,15 @@
 from training_data_dist import get_training_data
 from tensorflow import set_random_seed
 from keras import optimizers, losses
-from models import mlp
+from models import mlp, lstm
 import numpy as np
 import os
 import matplotlib.pyplot as plt
 
 np.random.seed(0)
 set_random_seed(0)
+
+mode = 'mlp' # 'mlp' or 'lstm'
 
 def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.figure()
@@ -22,10 +24,13 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
 
 def main():
     x_protein, x_ligand, x_distance, y = get_training_data()
-    model = mlp(x_distance.shape[1])
+    if mode == 'mlp':
+        model = mlp(x_distance.shape[1])
+    else:
+        model = lstm(x_distance.shape[1])
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
-    history = model.fit(x=x_distance, y=y, epochs=10, verbose=1, batch_size=32)
+    history = model.fit(x=x_distance, y=y, epochs=10, verbose=1, batch_size=1)
     plot([history.history['loss'], history.history['acc']], ['loss', 'acc'], ['b', 'r'],\
-        'epoch', 'loss', 'Train loss and accuracy vs epoch', 'train_dist.png')
+        'epoch', 'loss', 'Train loss and accuracy vs epoch', 'train_dist_' + mode + '.png')
 
 if __name__ == '__main__': main()
