@@ -2,6 +2,7 @@ from utils import ls, load_pickle, dump_pickle, read_lines
 import numpy as np
 import random
 import os
+import gc
 
 PROTEIN_FILENAME_SUFFIX = '_pro_cg.pdb'
 LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb' 
@@ -60,16 +61,24 @@ def generate_training_data(training_data_dir_path):
             x_neg_ligand.append(neg_ligand)
         return x_neg_protein, x_neg_ligand, y_neg
     
-    def pad_with_zeroes(data, max_length, num_features=4):
-        empty_row = [0 for x in range(num_features)]
+    def reshape_data(data, max_x, max_y, max_z, num_channels=2):
+        print(max_x, max_y, max_z)
+        result = []
         for i in range(len(data)):
+            gc.collect()
+            reshaped = np.zeros(shape=(int(max_x), int(max_y), int(max_z), num_channels))
             complex = data[i]
-            for j in range(max_length - len(complex)):
-                complex.append(empty_row)
-        return data
+            for atom in complex:
+                x = int(atom[0])
+                y = int(atom[1])
+                z = int(atom[2])
+                channel = int(atom[3])
+                reshaped[x][y][z][channel] = 1
+            result.append(reshaped)
+        return np.array(result)
 
     ############################## Function body #############################
-    protein_data, ligand_data, max_length = load_data(training_data_dir_path)
+    protein_data, ligand_data, max_x, max_y, max_z = load_data(training_data_dir_path)
 
     # Positive examples
     x_pos_protein = protein_data
@@ -85,9 +94,10 @@ def generate_training_data(training_data_dir_path):
     x_ligand = x_pos_ligand + x_neg_ligand
     y = y_pos + y_neg
 
-    # Pad smaller complexes with zeroes
-    x_protein = pad_with_zeroes(x_protein, max_length)
-    x_ligand = pad_with_zeroes(x_ligand, max_length)
+    # Reshape into shape=(x, y, z, type)
+    print(max_x, max_y, max_z)
+    x_protein = reshape_data(x_protein, max_x * 1000, max_y * 1000, max_z * 1000)
+    x_ligand = reshape_data(x_ligand, max_x * 1000, max_y * 1000, max_z * 1000)
 
     return np.array(x_protein), np.array(x_ligand), np.array(y)
 
@@ -97,8 +107,8 @@ def load_data(dir_path):
         dir_path (str): the training_data directory.
 
     Returns: 
-        protein_data (list): [[protein_x_list, protein_y_list, protein_z_list, protein_type_list], ... ].
-        ligand_data (list): [[ligand_x_list, ligand_y_list, ligand_z_list, ligand_type_list], ... ].
+        protein_data (list): [ [[protein_x, protein_y, protein_z, protein_type], ... ] , ... ].
+        ligand_data (list): [ [[ligand_x, ligand_y, ligand_z, ligand_type], ... ] , ... ].
         Where for the same index position in the respective lists, the corresponding protein and ligand is a receptive pair.
     '''
     ############################ Helper functions ############################
@@ -108,9 +118,9 @@ def load_data(dir_path):
     def get_pair(index):
         protein_path = os.path.join(dir_path, index + PROTEIN_FILENAME_SUFFIX)
         ligand_path = os.path.join(dir_path, index + LIGAND_FILENAME_SUFFIX)
-        protein = read_complex(protein_path)
-        ligand = read_complex(ligand_path)
-        return protein, ligand, max(len(protein), len(ligand))
+        protein, largest_protein_x, largest_protein_y, largest_protein_z = read_complex(protein_path)
+        ligand, largest_ligand_x, largest_ligand_y, largest_ligand_z = read_complex(ligand_path)
+        return protein, ligand, max(largest_protein_x, largest_ligand_x), max(largest_protein_y, largest_ligand_y), max(largest_protein_z, largest_ligand_z)
 
     def read_complex(file_path):
         # Read atom data from file
@@ -118,25 +128,41 @@ def load_data(dir_path):
 
         # Construct complex from atom data
         atoms = []
+        max_x = 0
+        max_y = 0
+        max_z = 0
 
         for line in content:
             x = float(line[30:38].strip())
+            max_x = x if x > max_x else max_x
+
             y = float(line[38:46].strip())
+            max_y = y if y > max_y else max_y
+
             z = float(line[46:54].strip())
+            max_z = z if z > max_z else max_z
+
             atom_type = line[76:78].strip()
-            hydrophobicity = 2 if atom_type == 'C' else 1 # 2 for hydrophobic, 1 for polar
+            hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
+
             atoms.append([x, y, z, hydrophobicity])
 
-        return atoms
+        return atoms, max_x, max_y, max_z
 
     ############################## Function body #############################
     protein_data = []
     ligand_data = []
-    max_length = 0
+    max_x = 0
+    max_y = 0
+    max_z = 0
     for protein_filename in ls(dir_path, lambda x: x.endswith(PROTEIN_FILENAME_SUFFIX)):
         index = get_index(protein_filename)
-        protein, ligand, length = get_pair(index)
+        protein, ligand, largest_x, largest_y, largest_z = get_pair(index)
         protein_data.append(protein)
         ligand_data.append(ligand)
-        max_length = length if length > max_length else max_length
-    return protein_data, ligand_data, max_length
+
+        max_x = largest_x if largest_x > max_x else max_x
+        max_y = largest_y if largest_y > max_y else max_y
+        max_z = largest_z if largest_z > max_z else max_z
+
+    return protein_data, ligand_data, max_x, max_y, max_z
