@@ -9,6 +9,7 @@ import matplotlib.pyplot as plt
 np.random.seed(0)
 set_random_seed(0)
 
+# CHANGE THIS VARIABLE TO SWITCH BETWEEN MLP AND LSTM
 mode = 'mlp' # 'mlp' or 'lstm'
 
 def plot(data, labels, colours, xlabel, ylabel, title, filename):
