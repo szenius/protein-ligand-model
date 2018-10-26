@@ -30,7 +30,7 @@ def main():
     else:
         model = lstm(x_distance.shape[1])
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
-    history = model.fit(x=x_distance, y=y, epochs=10, verbose=1, batch_size=1)
+    history = model.fit(x=x_distance, y=y, epochs=10, verbose=1, batch_size=32)
     plot([history.history['loss'], history.history['acc']], ['loss', 'acc'], ['b', 'r'],\
         'epoch', 'loss', 'Train loss and accuracy vs epoch', 'train_dist_' + mode + '.png')
 
