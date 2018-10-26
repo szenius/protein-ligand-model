@@ -1,6 +1,20 @@
 import keras
 from keras.models import Model
-from keras.layers import Input, Dense, Conv1D, Activation, MaxPool1D, Dropout, Flatten, concatenate, GlobalMaxPooling1D
+from keras.layers import Input, Dense, Conv1D, Activation, MaxPool1D, Dropout, concatenate, GlobalMaxPooling1D
+from keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, LeakyReLU
+
+def mlp(num_input, class_num=1):
+    input = Input((num_input,))
+
+    for i in range(3):
+        t = Dense(20)(input)
+        t = LeakyReLU()(t)
+        t = Dropout(0.5)(t)
+
+    t = Dense(class_num)(t)
+    t = LeakyReLU()(t)
+
+    return Model(inputs=input, outputs=t)
 
 def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), class_num=1):
     # Note: None in shape denotes variable size
