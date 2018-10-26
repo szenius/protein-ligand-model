@@ -12,7 +12,7 @@ set_random_seed(0)
 def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.figure()
     for i in range(len(data)):
-        plt.plot(data[i], label=labels[i], c=colors[i])
+        plt.plot(data[i], label=labels[i], c=colours[i])
     plt.title(title)
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
