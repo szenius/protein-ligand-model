@@ -4,8 +4,23 @@ from keras.layers import Input, Dense, Conv1D, Activation, MaxPool1D, Dropout, c
 from keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, LeakyReLU, LSTM, Embedding
 
 def single_stream_cnn(shape=(None, None, 1), class_num=1):
-    # todo:
-    pass
+    input = Input(shape=shape)
+
+    for i in range(10):
+        t = Conv2D(filters=32, kernel_size=(2,2), padding='valid')(input)
+        t = LeakyReLU()(t)
+        t = MaxPool2D(pool_size=2, padding='valid')(t)
+    
+    t = GlobalMaxPooling2D()(t) # TODO: explore ROI pooling
+
+    for i in range(3):
+        t = Dense(1024)(t)
+        t = LeakyReLU()(t)
+        t = Dropout(0.5)(t)
+
+    t = Dense(class_num, activation='softmax')(t)
+    
+    return Model(inputs=input, outputs=t)
 
 def lstm(length, class_num=1):
     '''

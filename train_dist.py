@@ -9,8 +9,8 @@ import matplotlib.pyplot as plt
 np.random.seed(0)
 set_random_seed(0)
 
-# CHANGE THIS VARIABLE TO SWITCH BETWEEN MLP AND LSTM
-mode = 'mlp' # 'mlp' or 'lstm' or 'conv2d'
+# CHANGE THIS VARIABLE TO SWITCH BETWEEN MLP, LSTM, CONV2D
+mode = 'conv2d' # 'mlp' or 'lstm' or 'conv2d'
 
 def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.figure()
@@ -25,8 +25,6 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
 
 def main():
     x_seq_dist, x_ij_dist, y = get_training_data()
-    print(x_seq_dist.shape, x_ij_dist.shape)
-    sys.exit()
 
     # Get model
     if mode == 'mlp':
@@ -44,7 +42,7 @@ def main():
         loss = []
         acc = []
         for i in range(len(x_ij_dist)):
-            history = model.fit(x=x_ij_dist[i], y=y[i], epochs=epochs, verbose=1, batch_size=batch_size)
+            history = model.fit(x=np.array([x_ij_dist[i]]), y=y[i], epochs=epochs, verbose=1, batch_size=batch_size)
             loss.append(history.history['loss'])
             acc.append(history.history['acc'])
     else:

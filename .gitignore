@@ -4,6 +4,7 @@
 .DS_Store
 *.pkl
 *.png
+*testing_data_release/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
