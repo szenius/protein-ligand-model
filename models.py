@@ -55,6 +55,6 @@ def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), cla
     t = Activation('relu')(t)
     t = Dropout(0.5)(t)
 
-    t = Dense(class_num)(t)
+    t = Dense(class_num, activation='softmax')(t)
 
     return Model(inputs=[protein_input, ligand_input], outputs=t)
