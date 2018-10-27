@@ -56,29 +56,29 @@ def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), cla
     
     def protein_network(t):
         t = Conv1D(filters=32, kernel_size=4, padding='valid')(t)
-        t = LeakyReLU()(t)
+        t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
 
         t = Conv1D(filters=64, kernel_size=6, padding='valid')(t)
-        t = LeakyReLU()(t)
+        t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
 
         t = Conv1D(filters=96, kernel_size=8, padding='valid')(t)
-        t = LeakyReLU()(t)
+        t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
         return t
 
     def ligand_network(t):
         t = Conv1D(filters=32, kernel_size=4, padding='valid')(t)
-        t = LeakyReLU()(t)
+        t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
 
         t = Conv1D(filters=64, kernel_size=6, padding='valid')(t)
-        t = LeakyReLU()(t)
+        t = Activation('relu')(t)        
         t = MaxPool1D(pool_size=2, padding='valid')(t)
 
         t = Conv1D(filters=96, kernel_size=8, padding='valid')(t)
-        t = LeakyReLU()(t)
+        t = Activation('relu')(t)
         t = MaxPool1D(pool_size=2, padding='valid')(t)
         return t
 
@@ -91,15 +91,15 @@ def dual_stream_cnn(protein_data_shape=(None,4), ligand_data_shape=(None,4), cla
     t = GlobalMaxPooling1D()(t) # TODO: explore ROI pooling
 
     t = Dense(1024)(t)
-    t = LeakyReLU()(t)
+    t = Activation('relu')(t)
     t = Dropout(0.5)(t)
 
     t = Dense(1024)(t)
-    t = LeakyReLU()(t)
+    t = Activation('relu')(t)
     t = Dropout(0.5)(t)
 
     t = Dense(512)(t)
-    t = LeakyReLU()(t)
+    t = Activation('relu')(t)
     t = Dropout(0.5)(t)
 
     t = Dense(class_num, activation='softmax')(t)
