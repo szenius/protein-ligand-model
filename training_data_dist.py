@@ -65,13 +65,26 @@ def generate_training_data(training_data_dir_path):
     def euclidean_distance(v1, v2):
         return np.linalg.norm(np.array(v1) - np.array(v2))
 
-    def generate_distances_for_complex(protein, ligand, max_length):
+    def generate_seq_distances(protein, ligand, max_length):
         distances = []
         for i in range(min(len(protein), len(ligand))):
             distances.append(euclidean_distance(protein[i][:-1], ligand[i][:-1]))
         for i in range(len(distances), max_length):
             distances.append(0)
         return distances
+    
+    def generate_ij_distances(protein, ligand, max_length):
+        distances = np.zeros((max_length, max_length))
+        for i in range(len(protein)):
+            for j in range(len(ligand)):
+                distances[i][j] = euclidean_distance(protein[i][:-1], ligand[j][:-1])
+        return distances
+
+    def pad_with_zeros(data2d, max_length):
+        empty_row = [0,0,0,0]
+        for i in range(len(data2d), max_length):
+            data2d.append(empty_row)
+        return data2d
     
     ############################## Function body #############################
     protein_data, ligand_data, max_length = load_data(training_data_dir_path)
@@ -95,18 +108,17 @@ def generate_training_data(training_data_dir_path):
     # Generate sequential distances
     x_seq_dist = []
     for i in range(len(x_protein)):
-        print("Generating atom distances for protein-ligand pair", i, "/", len(x_protein))
-        x_seq_dist
-.append(generate_distances_for_complex(x_protein[i], x_ligand[i], max_length))
+        print("Generating seq distances for protein-ligand pair", i + 1, "/", len(x_protein))
+        x_seq_dist.append(generate_seq_distances(x_protein[i], x_ligand[i], max_length))
 
     # Generate ij distances
-    max_ij_length = 0.5 * max_length * (max_length + 1)
-    x_ij_dist = np.zeros((len(x_protein), max_ij_length))
+    x_ij_dist = []
     for i in range(len(x_protein)):
         for j in range(len(x_ligand)):
+            print("Generating ij distances for protein", i + 1, "/", len(x_protein), "ligand", j + 1, "/", len(x_ligand))
             x_protein[i] = pad_with_zeros(x_protein[i], max_length)
             x_ligand[j] = pad_with_zeros(x_ligand[j], max_length)
-            x_ij_dist[i][j] = euclidean_distance(x_protein[i], x_ligand[i], max_ij_length)
+            x_ij_dist.append(generate_ij_distances(x_protein[i], x_ligand[i], max_length))
 
     return np.array(x_seq_dist), np.array(x_ij_dist), np.array(y)
 

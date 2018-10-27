@@ -3,6 +3,10 @@ from keras.models import Model, Sequential
 from keras.layers import Input, Dense, Conv1D, Activation, MaxPool1D, Dropout, concatenate, GlobalMaxPooling1D
 from keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, LeakyReLU, LSTM, Embedding
 
+def single_stream_cnn(shape=(None, None, 1)):
+    # todo:
+    pass
+
 def lstm(length):
     '''
     Adapted from a random LSTM model for binary classification I found

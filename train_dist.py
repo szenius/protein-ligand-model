@@ -24,7 +24,9 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.clf()
 
 def main():
-    x_protein, x_ligand, x_distance, y = get_training_data()
+    x_seq_dist, x_ij_dist, y = get_training_data()
+    print(x_seq_dist.shape, x_ij_dist.shape)
+    sys.exit()
 
     # Get model
     if mode == 'mlp':
