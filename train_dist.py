@@ -53,8 +53,13 @@ def main():
         loss = history.history['loss']
         acc = history.history['acc']
 
+    filename_prefix = '_'.join(['train', 'dist', mode, epochs, batch_size])
+
     # Plot loss vs accuracy
     plot([loss, acc], ['loss', 'acc'], ['b', 'r'], 'epoch', '', mode.upper()\
-    + " Training", '_'.join(['train', 'dist', mode, epochs, batch_size, '.png']))
+    + " Training", filename_prefix + '.png']))
+
+    # Save model
+    model.save(filename_prefix + '.h5')
 
 if __name__ == '__main__': main()
