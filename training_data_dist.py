@@ -73,18 +73,14 @@ def generate_training_data(training_data_dir_path):
             distances.append(0)
         return distances
     
-    def generate_ij_distances(protein, ligand, max_length):
-        distances = np.zeros((max_length, max_length))
+    def generate_ij_distances(protein, ligand):
+        distances = []
         for i in range(len(protein)):
+            row = []
             for j in range(len(ligand)):
-                distances[i][j] = euclidean_distance(protein[i][:-1], ligand[j][:-1])
+                row.append(euclidean_distance(protein[i][:-1], ligand[j][:-1]))
+            distances.append(row)
         return distances
-
-    def pad_with_zeros(data2d, max_length):
-        empty_row = [0,0,0,0]
-        for i in range(len(data2d), max_length):
-            data2d.append(empty_row)
-        return data2d
     
     ############################## Function body #############################
     protein_data, ligand_data, max_length = load_data(training_data_dir_path)
@@ -114,13 +110,10 @@ def generate_training_data(training_data_dir_path):
     # Generate ij distances
     x_ij_dist = []
     for i in range(len(x_protein)):
-        for j in range(len(x_ligand)):
-            print("Generating ij distances for protein", i + 1, "/", len(x_protein), "ligand", j + 1, "/", len(x_ligand))
-            x_protein[i] = pad_with_zeros(x_protein[i], max_length)
-            x_ligand[j] = pad_with_zeros(x_ligand[j], max_length)
-            x_ij_dist.append(generate_ij_distances(x_protein[i], x_ligand[i], max_length))
+        print("Generating ij distances for protein-ligand pair", i + 1, "/", len(x_protein))
+        x_ij_dist.append(generate_ij_distances(x_protein[i], x_ligand[i]))
 
-    return np.array(x_seq_dist), np.array(x_ij_dist), np.array(y)
+    return np.array(x_seq_dist), x_ij_dist, np.array(y)
 
 def load_data(dir_path):
     '''
