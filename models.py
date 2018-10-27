@@ -1,7 +1,7 @@
 import keras
 from keras.models import Model, Sequential
 from keras.layers import Input, Dense, Conv1D, Activation, MaxPool1D, Dropout, concatenate, GlobalMaxPooling1D
-from keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, LeakyReLU, LSTM, Embedding
+from keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, LeakyReLU, LSTM, Embedding, Flatten
 
 def single_stream_cnn(shape=(None, None, 1), class_num=1):
     input = Input(shape=shape)
@@ -10,9 +10,9 @@ def single_stream_cnn(shape=(None, None, 1), class_num=1):
         t = Conv2D(filters=32, kernel_size=(2,2), padding='valid')(input)
         t = LeakyReLU()(t)
         t = MaxPool2D(pool_size=2, padding='valid')(t)
-    
-    t = GlobalMaxPooling2D()(t) # TODO: explore ROI pooling
 
+    t = GlobalMaxPooling2D()(t)
+            
     for i in range(3):
         t = Dense(1024)(t)
         t = LeakyReLU()(t)

@@ -69,7 +69,7 @@ def generate_training_data(training_data_dir_path):
     def generate_seq_distances(protein, ligand, max_length):
         distances = []
         for i in range(min(len(protein), len(ligand))):
-            distances.append([euclidean_distance(protein[i][:-1], ligand[i][:-1])])
+            distances.append(euclidean_distance(protein[i][:-1], ligand[i][:-1]))
         for i in range(len(distances), max_length):
             distances.append(0)
         return distances

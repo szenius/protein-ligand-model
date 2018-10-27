@@ -10,7 +10,7 @@ np.random.seed(0)
 set_random_seed(0)
 
 # CHANGE THIS VARIABLE TO SWITCH BETWEEN MLP, LSTM, CONV2D
-mode = 'conv2d' # 'mlp' or 'lstm' or 'conv2d'
+mode = 'lstm' # 'mlp' or 'lstm' or 'conv2d'
 
 def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.figure()
@@ -28,9 +28,9 @@ def main():
 
     # Get model
     if mode == 'mlp':
-        model = mlp(x_distance.shape[1])
+        model = mlp(x_seq_dist.shape[1])
     elif mode == 'lstm':
-        model = lstm(x_distance.shape[1])
+        model = lstm(x_seq_dist.shape[1])
     else:            
         model = single_stream_cnn()
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
@@ -41,13 +41,14 @@ def main():
         batch_size = 1
         loss = []
         acc = []
+        print(model.summary())
         for i in range(len(x_ij_dist)):
-            history = model.fit(x=np.array([x_ij_dist[i]]), y=y[i], epochs=epochs, verbose=1, batch_size=batch_size)
+            history = model.fit(x=np.array([x_ij_dist[i]]), y=np.array([y[i]]), epochs=epochs, verbose=1, batch_size=batch_size)
             loss.append(history.history['loss'])
             acc.append(history.history['acc'])
-    else:
-        epochs = 10
+    else: 
         batch_size = 32
+        epochs = 10
         history = model.fit(x=x_seq_dist, y=y, epochs=epochs, verbose=1, batch_size=batch_size)
         loss = history.history['loss']
         acc = history.history['acc']
