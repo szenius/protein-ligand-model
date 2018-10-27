@@ -25,13 +25,19 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
 
 def main():
     x_protein, x_ligand, x_distance, y = get_training_data()
+
+    # Get model
     if mode == 'mlp':
         model = mlp(x_distance.shape[1])
     else:
         model = lstm(x_distance.shape[1])
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
-    history = model.fit(x=x_distance, y=y, epochs=10, verbose=1, batch_size=32)
+
+    # Fit model
+    epochs = 10
+    batch_size = 32
+    history = model.fit(x=x_distance, y=y, epochs=epochs, verbose=1, batch_size=batch_size)
     plot([history.history['loss'], history.history['acc']], ['loss', 'acc'], ['b', 'r'],\
-        'epoch', 'loss', 'Train loss and accuracy vs epoch', 'train_dist_' + mode + '.png')
+        'epoch', '', mode.upper() + " Training", '_'.join(['train', 'dist', mode, epochs, batch_size, '.png']))
 
 if __name__ == '__main__': main()

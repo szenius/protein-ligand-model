@@ -50,14 +50,16 @@ def generate_training_data(training_data_dir_path):
                 wrong_index = random.randint(0, len(ligand_data) - 1)
             return ligand_data[wrong_index]
 
+        neg_samples_per_protein = 1
         x_neg_protein = []
         x_neg_ligand = []
-        y_neg = [0] * len(protein_data)
+        y_neg = [0] * len(protein_data) * neg_samples_per_protein
         for i in range(len(protein_data)):
-            protein = protein_data[i]
-            neg_ligand = random_neg_ligand(i)
-            x_neg_protein.append(protein)
-            x_neg_ligand.append(neg_ligand)
+            for i in range(neg_samples_per_protein):
+                protein = protein_data[i]
+                neg_ligand = random_neg_ligand(i)
+                x_neg_protein.append(protein)
+                x_neg_ligand.append(neg_ligand)
         return x_neg_protein, x_neg_ligand, y_neg
 
     def euclidean_distance(v1, v2):
@@ -90,13 +92,23 @@ def generate_training_data(training_data_dir_path):
     y = y_pos + y_neg
     print("Generated train set for protein and ligand.")
 
-    # Generate distances
-    x_distance = []
+    # Generate sequential distances
+    x_seq_dist = []
     for i in range(len(x_protein)):
         print("Generating atom distances for protein-ligand pair", i, "/", len(x_protein))
-        x_distance.append(generate_distances_for_complex(x_protein[i], x_ligand[i], max_length))
+        x_seq_dist
+.append(generate_distances_for_complex(x_protein[i], x_ligand[i], max_length))
 
-    return np.array(x_protein), np.array(x_ligand), np.array(x_distance), np.array(y)
+    # Generate ij distances
+    max_ij_length = 0.5 * max_length * (max_length + 1)
+    x_ij_dist = np.zeros((len(x_protein), max_ij_length))
+    for i in range(len(x_protein)):
+        for j in range(len(x_ligand)):
+            x_protein[i] = pad_with_zeros(x_protein[i], max_length)
+            x_ligand[j] = pad_with_zeros(x_ligand[j], max_length)
+            x_ij_dist[i][j] = euclidean_distance(x_protein[i], x_ligand[i], max_ij_length)
+
+    return np.array(x_seq_dist), np.array(x_ij_dist), np.array(y)
 
 def load_data(dir_path):
     '''

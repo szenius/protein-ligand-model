@@ -27,7 +27,6 @@ def mlp(num_input, class_num=1):
         t = Dropout(0.5)(t)
 
     t = Dense(class_num, activation='softmax')(t)
-    t = LeakyReLU()(t)
 
     return Model(inputs=input, outputs=t)
 
