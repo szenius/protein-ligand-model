@@ -62,10 +62,8 @@ def generate_training_data(training_data_dir_path):
         return x_neg_protein, x_neg_ligand, y_neg
     
     def reshape_data(data, max_x, max_y, max_z, num_channels=2):
-        print(max_x, max_y, max_z)
         result = []
         for i in range(len(data)):
-            gc.collect()
             reshaped = np.zeros(shape=(int(max_x), int(max_y), int(max_z), num_channels))
             complex = data[i]
             for atom in complex:
@@ -95,9 +93,12 @@ def generate_training_data(training_data_dir_path):
     y = y_pos + y_neg
 
     # Reshape into shape=(x, y, z, type)
-    print(max_x, max_y, max_z)
-    x_protein = reshape_data(x_protein, max_x * 1000, max_y * 1000, max_z * 1000)
-    x_ligand = reshape_data(x_ligand, max_x * 1000, max_y * 1000, max_z * 1000)
+    max_x = int(max_x * 1000)
+    max_y = int(max_y * 1000)
+    max_z = int(max_z * 1000)
+    print("Reshaping data into shape ({},{},{},{})".format(max_x, max_y, max_z, 2))
+    x_protein = reshape_data(x_protein, max_x, max_y, max_z)
+    x_ligand = reshape_data(x_ligand, max_x, max_y, max_z)
 
     return np.array(x_protein), np.array(x_ligand), np.array(y)
 
@@ -128,26 +129,32 @@ def load_data(dir_path):
 
         # Construct complex from atom data
         atoms = []
-        max_x = 0
-        max_y = 0
-        max_z = 0
+        max_x = min_x = max_y = min_y = max_z = min_z = 0
 
         for line in content:
             x = float(line[30:38].strip())
-            max_x = x if x > max_x else max_x
+            max_x = max(x, max_x)
+            min_x = min(x, min_x)
 
             y = float(line[38:46].strip())
-            max_y = y if y > max_y else max_y
+            max_y = max(y, max_y)
+            min_y = min(y, min_y)
 
             z = float(line[46:54].strip())
-            max_z = z if z > max_z else max_z
+            max_z = max(z, max_z)
+            min_z = min(z, min_z)
 
             atom_type = line[76:78].strip()
             hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
 
             atoms.append([x, y, z, hydrophobicity])
+        
+        for atom in atoms:
+            atom[0] += abs(min_x)
+            atom[1] += abs(min_y)
+            atom[2] += abs(min_z)
 
-        return atoms, max_x, max_y, max_z
+        return atoms, max_x + abs(min_x), max_y + abs(min_y), max_z + abs(min_z)
 
     ############################## Function body #############################
     protein_data = []
