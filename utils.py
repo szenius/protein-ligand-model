@@ -10,9 +10,9 @@ def load_pickle(pickle_path):
   """Loads pickle from given pickle path"""
   return pkl.load(open(pickle_path, 'rb'))
 
-def dump_pickle(pickle_path, payload):
+def dump_pickle(pickle_path, payload, protocol=4):
   """Dumps pickle payload to given pickle path"""
-  pkl.dump(payload, open(pickle_path, 'wb'))
+  pkl.dump(payload, open(pickle_path, 'wb', protocol=protocol))
 
 def write_csv(rows, output_path, header=None, delimiter=','):
   """Writes out rows to csv file given output path"""
