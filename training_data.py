@@ -129,32 +129,21 @@ def load_data(dir_path):
 
         # Construct complex from atom data
         atoms = []
-        max_x = min_x = max_y = min_y = max_z = min_z = 0
-
         for line in content:
             x = float(line[30:38].strip())
-            max_x = max(x, max_x)
-            min_x = min(x, min_x)
-
             y = float(line[38:46].strip())
-            max_y = max(y, max_y)
-            min_y = min(y, min_y)
-
             z = float(line[46:54].strip())
-            max_z = max(z, max_z)
-            min_z = min(z, min_z)
-
             atom_type = line[76:78].strip()
             hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
-
             atoms.append([x, y, z, hydrophobicity])
         
-        for atom in atoms:
-            atom[0] += abs(min_x)
-            atom[1] += abs(min_y)
-            atom[2] += abs(min_z)
-
-        return atoms, max_x + abs(min_x), max_y + abs(min_y), max_z + abs(min_z)
+        np_atoms = np.asarray(atoms)
+        xyzh_mins = np.amin(np_atoms, axis=0)               # get all mins
+        xyzh_mins[-1] = 0                                   # force min of hydrophobicity to be 0 (just in case)
+        np_atoms -= xyzh_mins                               # translate values such that min is now zero
+        max_x, max_y, max_z, _ = np.amax(np_atoms, axis=0)  # the new maxes for x, y, z
+        atoms = np_atoms.tolist()                           # convert back to python list
+        return atoms, max_x, max_y, max_z
 
     ############################## Function body #############################
     protein_data = []
