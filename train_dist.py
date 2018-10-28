@@ -1,16 +1,17 @@
 from training_data_dist import get_training_data
 from tensorflow import set_random_seed
 from keras import optimizers, losses
-from models import mlp, lstm, single_stream_cnn
+from models import mlp, lstm
 import numpy as np
 import os
 import matplotlib.pyplot as plt
+import sys
 
 np.random.seed(0)
 set_random_seed(0)
 
-# CHANGE THIS VARIABLE TO SWITCH BETWEEN MLP, LSTM, CONV2D
-mode = 'lstm' # 'mlp' or 'lstm' or 'conv2d'
+mode = sys.argv[1] # 'lstm' or 'mlp'
+data = sys.argv[2] if len(sys.argv) > 2 else 'seq1d' # 'ij' or 'seq1d' or 'seq2d'
 
 def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.figure()
@@ -24,40 +25,40 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.clf()
 
 def main():
-    x_seq_dist, x_ij_dist, y = get_training_data()
+    x_seq_dist_2d, x_seq_dist_1d, x_ij_dist, y = get_training_data()
 
     # Get model
     if mode == 'mlp':
-        model = mlp(x_seq_dist.shape[1])
+        if data == 'ij':
+            x = x_ij_dist
+            model = mlp(x.shape[1])
+        else: 
+            x = x_seq_dist_1d
+            model = mlp(x.shape[1])
     elif mode == 'lstm':
-        model = lstm(x_seq_dist.shape[1])
-    else:            
-        model = single_stream_cnn()
+        if data == 'ij':
+            x = x_ij_dist
+            model = lstm(x.shape[1])
+        else:
+            x = x_seq_dist_2d
+            model = lstm(x.shape[1])
+    else:
+        print("Invalid mode. Please use 'mlp' or 'lstm'.")
+        sys.exit()
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
 
     # Fit model
-    if mode == 'conv2d':
-        epochs = 1
-        batch_size = 1
-        loss = []
-        acc = []
-        print(model.summary())
-        for i in range(len(x_ij_dist)):
-            history = model.fit(x=np.array([x_ij_dist[i]]), y=np.array([y[i]]), epochs=epochs, verbose=1, batch_size=batch_size)
-            loss.append(history.history['loss'])
-            acc.append(history.history['acc'])
-    else: 
-        batch_size = 32
-        epochs = 10
-        history = model.fit(x=x_seq_dist, y=y, epochs=epochs, verbose=1, batch_size=batch_size)
-        loss = history.history['loss']
-        acc = history.history['acc']
+    batch_size = 32
+    epochs = 10
+    history = model.fit(x=x, y=y, epochs=epochs, verbose=1, batch_size=batch_size)
+    loss = history.history['loss']
+    acc = history.history['acc']
 
     filename_prefix = '_'.join(['train', 'dist', mode, epochs, batch_size])
 
     # Plot loss vs accuracy
     plot([loss, acc], ['loss', 'acc'], ['b', 'r'], 'epoch', '', mode.upper()\
-    + " Training", filename_prefix + '.png']))
+    + " Training", filename_prefix + '.png')
 
     # Save model
     model.save(filename_prefix + '.h5')

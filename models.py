@@ -3,25 +3,6 @@ from keras.models import Model, Sequential
 from keras.layers import Input, Dense, Conv1D, Activation, MaxPool1D, Dropout, concatenate, GlobalMaxPooling1D
 from keras.layers import Conv2D, MaxPool2D, GlobalMaxPooling2D, LeakyReLU, LSTM, Embedding, Flatten
 
-def single_stream_cnn(shape=(None, None, 1), class_num=1):
-    input = Input(shape=shape)
-
-    for i in range(10):
-        t = Conv2D(filters=32, kernel_size=(2,2), padding='valid')(input)
-        t = LeakyReLU()(t)
-        t = MaxPool2D(pool_size=2, padding='valid')(t)
-
-    t = GlobalMaxPooling2D()(t)
-            
-    for i in range(3):
-        t = Dense(1024)(t)
-        t = LeakyReLU()(t)
-        t = Dropout(0.5)(t)
-
-    t = Dense(class_num, activation='softmax')(t)
-    
-    return Model(inputs=input, outputs=t)
-
 def lstm(length, class_num=1):
     '''
     Adapted from a random LSTM model for binary classification I found
@@ -29,21 +10,22 @@ def lstm(length, class_num=1):
     TODO: find better architecture???
     '''
     model = Sequential()
-    model.add(Embedding(input_dim = length, output_dim = 50, input_length = length))
-    model.add(LSTM(units=256, activation='relu', recurrent_activation='hard_sigmoid', return_sequences=True))
+    model.add(LSTM(units=256, activation='tanh', recurrent_activation='hard_sigmoid', return_sequences=True))
     model.add(Dropout(0.5))
-    model.add(LSTM(units=256, activation='relu', recurrent_activation='hard_sigmoid'))
+    model.add(LSTM(units=256, activation='tanh', recurrent_activation='hard_sigmoid'))
     model.add(Dropout(0.5))
     model.add(Dense(class_num, activation='softmax'))
     return model
 
 def mlp(num_input, class_num=1):
+    '''
+    TODO: better architecture
+    '''
     input = Input((num_input,))
 
-    for i in range(3):
-        t = Dense(1024)(input)
+    for i in range(5):
+        t = Dense(256)(input)
         t = LeakyReLU()(t)
-        t = Dropout(0.5)(t)
 
     t = Dense(class_num, activation='softmax')(t)
 

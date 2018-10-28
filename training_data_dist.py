@@ -65,22 +65,39 @@ def generate_training_data(training_data_dir_path):
 
     def euclidean_distance(v1, v2):
         return np.linalg.norm(np.array(v1) - np.array(v2))
+    
+    def get_seq_channel_index(type1, type2):
+        if type1 == 0 and type2 == 0:
+            return 0
+        elif type1 == 0 and type2 == 1:
+            return 1
+        elif type1 == 1 and type2 == 0:
+            return 2
+        else:
+            return 3
 
     def generate_seq_distances(protein, ligand, max_length):
-        distances = []
+        empty_row = [0,0,0,0]
+        distances_mlp = []
+        distances_lstm = []
         for i in range(min(len(protein), len(ligand))):
-            distances.append(euclidean_distance(protein[i][:-1], ligand[i][:-1]))
-        for i in range(len(distances), max_length):
-            distances.append(0)
-        return distances
+            distance = euclidean_distance(protein[i][:-1], ligand[i][:-1])
+            row = empty_row.copy()
+            row[get_seq_channel_index(protein[i][-1], ligand[i][-1])] = distance
+            distances_lstm.append(row)
+            distances_mlp.extend(row)
+        for i in range(len(distances_lstm), max_length):
+            distances_lstm.append(empty_row)
+            distances_mlp.extend(empty_row)
+        return distances_mlp, distances_lstm
     
     def generate_ij_distances(protein, ligand):
         distances = []
         for i in range(len(protein)):
             row = []
             for j in range(len(ligand)):
-                row.append([euclidean_distance(protein[i][:-1], ligand[j][:-1])])
-            distances.append(row)
+                row.append(euclidean_distance(protein[i][:-1], ligand[j][:-1]))
+            distances.extend(row)
         return distances
     
     ############################## Function body #############################
@@ -103,18 +120,27 @@ def generate_training_data(training_data_dir_path):
     print("Generated train set for protein and ligand.")
 
     # Generate sequential distances
-    x_seq_dist = []
+    x_seq_dist_lstm = []
+    x_seq_dist_mlp = []
     for i in range(len(x_protein)):
         print("Generating seq distances for protein-ligand pair", i + 1, "/", len(x_protein))
-        x_seq_dist.append(generate_seq_distances(x_protein[i], x_ligand[i], max_length))
+        seq_dist_mlp, seq_dist_lstm = generate_seq_distances(x_protein[i], x_ligand[i], max_length)
+        x_seq_dist_mlp.append(seq_dist_mlp)
+        x_seq_dist_lstm.append(seq_dist_lstm)
 
     # Generate ij distances
     x_ij_dist = []
+    max_ij_length = 0
     for i in range(len(x_protein)):
         print("Generating ij distances for protein-ligand pair", i + 1, "/", len(x_protein))
-        x_ij_dist.append(generate_ij_distances(x_protein[i], x_ligand[i]))
+        ij_distance = generate_ij_distances(x_protein[i], x_ligand[i])
+        max_ij_length = max(max_ij_length, len(ij_distance))
+        x_ij_dist.append(ij_distance)
+    for i in range(len(x_ij_dist)):
+        for j in range(len(x_ij_dist[i]), max_ij_length):
+            x_ij_dist[i].append(0)
 
-    return np.array(x_seq_dist), x_ij_dist, np.array(y)
+    return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(y)
 
 def load_data(dir_path):
     '''
@@ -149,7 +175,7 @@ def load_data(dir_path):
             y = float(line[38:46].strip())
             z = float(line[46:54].strip())
             atom_type = line[76:78].strip()
-            hydrophobicity = 2 if atom_type == 'C' else 1 # 2 for hydrophobic, 1 for polar
+            hydrophobicity = 1 if atom_type == 'C' else 0 # 2 for hydrophobic, 1 for polar
             atoms.append([x, y, z, hydrophobicity])
 
         return atoms
