@@ -54,7 +54,7 @@ def main():
     loss = history.history['loss']
     acc = history.history['acc']
 
-    filename_prefix = '_'.join(['train', 'dist', mode, epochs, batch_size])
+    filename_prefix = '_'.join(['train', 'dist', mode, str(epochs), str(batch_size)])
 
     # Plot loss vs accuracy
     plot([loss, acc], ['loss', 'acc'], ['b', 'r'], 'epoch', '', mode.upper()\
