@@ -10,7 +10,8 @@ LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
 def get_training_data(
     training_data_dir_path = os.path.abspath('./training_data'),
     training_data_pkl_path = os.path.abspath('./training_data_dist.pkl'),
-    reprocess=False):
+    reprocess=False,
+    size=128):
     '''
     Args:
         training_data_dir_path (str):  the training_data directory.
@@ -22,14 +23,14 @@ def get_training_data(
     '''
     # If reprocessing training data or pkl does not exist
     if reprocess or not os.path.exists(training_data_pkl_path):
-        training_data = generate_training_data(training_data_dir_path)
+        training_data = generate_training_data(training_data_dir_path, size)
         dump_pickle(training_data_pkl_path, training_data) # save data to disk
         return training_data
     # Else load from previously prepared training data
     else:
         return load_pickle(training_data_pkl_path)
 
-def generate_training_data(training_data_dir_path):
+def generate_training_data(training_data_dir_path, size):
     '''
     Args:
         training_data_dir_path (str): the training_data directory.
@@ -121,7 +122,7 @@ def generate_training_data(training_data_dir_path):
         return distances_lstm, distances_mlp
     
     ############################## Function body #############################
-    protein_data, ligand_data, max_length = load_data(training_data_dir_path)
+    protein_data, ligand_data, max_length = load_data(training_data_dir_path, size)
     print("Loaded from training data files.")
 
     # Positive examples
@@ -167,12 +168,13 @@ def generate_training_data(training_data_dir_path):
             x_ij_dist[i].append([0,0,0,0,0,0])
             x_ij_dist_rev[i].append([0,0,0,0,0,0])
     for i in range(len(x_ij_dist_flattened)):
-        for j in range(len(x_ij_dist_flattened), max_ij_flattened_length):
+        for j in range(len(x_ij_dist_flattened[i]), max_ij_flattened_length):
             x_ij_dist_flattened[i].append(0)
+    print(len(x_ij_dist_flattened), len(x_ij_dist_flattened[0]), len(x_ij_dist_flattened[1]))
 
     return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(x_ij_dist_rev), np.array(x_ij_dist_flattened), np.array(y)
 
-def load_data(dir_path):
+def load_data(dir_path, size):
     '''
     Args:
         dir_path (str): the training_data directory.
@@ -214,10 +216,14 @@ def load_data(dir_path):
     protein_data = []
     ligand_data = []
     max_length = 0
+    num_read = 0
     for protein_filename in ls(dir_path, lambda x: x.endswith(PROTEIN_FILENAME_SUFFIX)):
+        if num_read >= size:
+            break
         index = get_index(protein_filename)
         protein, ligand, length = get_pair(index)
         protein_data.append(protein)
         ligand_data.append(ligand)
         max_length = length if length > max_length else max_length
+        num_read += 1
     return protein_data, ligand_data, max_length

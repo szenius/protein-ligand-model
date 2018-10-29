@@ -6,6 +6,7 @@ import numpy as np
 import os
 import matplotlib.pyplot as plt
 import sys
+import csv
 
 np.random.seed(0)
 set_random_seed(0)
@@ -31,6 +32,7 @@ def main():
     if mode == 'mlp':
         if data == 'ij':
             x = x_ij_dist_flat
+            print(x.shape)
             model = mlp(x.shape[1])
         else: 
             x = x_seq_dist_1d
@@ -62,10 +64,10 @@ def main():
     + " Training", filename_prefix + '.png')
 
     # Write loss and acc to file
-    with open(filename_prefix + '.txt', 'w') as f:
-        f.write(','.join(loss))
-        f.write('\n')
-        f.write(','.join(acc))
+    with open(filename_prefix + '.csv', 'w') as f:
+        writer = csv.writer(f)
+        writer.writerow([l for l in loss])
+        writer.writerow([a for a in acc])
 
     # Save model
     model.save(filename_prefix + '.h5')
