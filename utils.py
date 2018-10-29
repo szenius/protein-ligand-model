@@ -12,7 +12,7 @@ def load_pickle(pickle_path):
 
 def dump_pickle(pickle_path, payload, protocol=4):
   """Dumps pickle payload to given pickle path"""
-  pkl.dump(payload, open(pickle_path, 'wb', protocol=protocol))
+  pkl.dump(payload, open(pickle_path, 'wb'), protocol=protocol)
 
 def write_csv(rows, output_path, header=None, delimiter=','):
   """Writes out rows to csv file given output path"""
