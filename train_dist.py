@@ -44,6 +44,7 @@ def main():
             model = lstm(x.shape[1])
         else:
             x = x_seq_dist_2d
+            print(x.shape[1])
             model = lstm(x.shape[1])
     else:
         print("Invalid mode. Please use 'mlp' or 'lstm'.")
