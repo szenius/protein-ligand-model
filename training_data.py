@@ -11,8 +11,7 @@ LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
 def get_training_data(
     training_data_dir_path = os.path.abspath('./training_data'),
     training_data_pkl_path_format = './training_data_{}.pkl',
-    size = 0,
-    reprocess=False):
+    size = 0, reprocess=False, save_training_data=True):
     '''
     Args:
         training_data_dir_path (str):  the training_data directory.
@@ -27,7 +26,8 @@ def get_training_data(
     # If reprocessing training data or pkl does not exist
     if reprocess or not os.path.exists(training_data_pkl_path):
         training_data = generate_training_data(training_data_dir_path, size=size)
-        dump_pickle(training_data_pkl_path, training_data) # save data to disk
+        if save_training_data:
+            dump_pickle(training_data_pkl_path, training_data) # save data to disk
         return training_data
     # Else load from previously prepared training data
     else:
