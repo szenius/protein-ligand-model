@@ -24,7 +24,7 @@ def mlp(num_input, class_num=1):
     input = Input((num_input,))
 
     for i in range(5):
-        t = Dense(256)(input)
+        t = Dense(20)(input)
         t = LeakyReLU()(t)
 
     t = Dense(class_num, activation='softmax')(t)

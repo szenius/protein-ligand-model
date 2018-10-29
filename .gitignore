@@ -5,6 +5,7 @@
 *.pkl
 *.png
 *testing_data_release/*
+*.code-workspace
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

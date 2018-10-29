@@ -66,38 +66,56 @@ def generate_training_data(training_data_dir_path):
     def euclidean_distance(v1, v2):
         return np.linalg.norm(np.array(v1) - np.array(v2))
     
-    def get_seq_channel_index(type1, type2):
-        if type1 == 0 and type2 == 0:
-            return 0
-        elif type1 == 0 and type2 == 1:
-            return 1
-        elif type1 == 1 and type2 == 0:
-            return 2
+    def type_index(type1, type2):
+        min_type = min(type1, type2)
+        max_type = max(type1, type2)
+        if min_type == max_type:
+            index = min_type
         else:
-            return 3
+            index = min_type + max_type + 2
+        return index
+
+    def atom_vector(atom1, atom2=[0,0,0,0]):
+        result = [0,0,0,0,0,0]
+        ed = euclidean_distance(atom1[:-1], atom2[:-1])
+        result[type_index(atom1[-1], atom2[-1])] = ed
+        return result
 
     def generate_seq_distances(protein, ligand, max_length):
-        empty_row = [0,0,0,0]
         distances_mlp = []
         distances_lstm = []
-        for i in range(min(len(protein), len(ligand))):
-            distance = euclidean_distance(protein[i][:-1], ligand[i][:-1])
-            row = empty_row.copy()
-            row[get_seq_channel_index(protein[i][-1], ligand[i][-1])] = distance
+
+        # Get distance vectors between each atom in sequential order
+        min_num = min(len(protein), len(ligand))
+        for i in range(min_num):
+            row = atom_vector(protein[i], ligand[i])
             distances_lstm.append(row)
             distances_mlp.extend(row)
+        
+        # For uneven lengths of protein and ligand atoms, pad till max of either length.
+        for i in range(min_num, len(protein)):
+            row = atom_vector(protein[i])
+            distances_lstm.append(row)
+            distances_mlp.extend(row)
+        for i in range(min_num, len(ligand)):
+            row = atom_vector(ligand[i])
+            distances_lstm.append(row)
+            distances_mlp.extend(row)
+
+        # Pad with empty values to max length
+        empty_row = [0,0,0,0,0,0]
         for i in range(len(distances_lstm), max_length):
             distances_lstm.append(empty_row)
             distances_mlp.extend(empty_row)
         return distances_mlp, distances_lstm
     
     def generate_ij_distances(protein, ligand):
+        empty_row = [0,0,0,0,0,0]
         distances = []
         for i in range(len(protein)):
-            row = []
             for j in range(len(ligand)):
-                row.append(euclidean_distance(protein[i][:-1], ligand[j][:-1]))
-            distances.extend(row)
+                row = atom_vector(protein[i], ligand[j])
+                distances.append(row)
         return distances
     
     ############################## Function body #############################
@@ -130,17 +148,20 @@ def generate_training_data(training_data_dir_path):
 
     # Generate ij distances
     x_ij_dist = []
+    x_ij_dist_rev = []
     max_ij_length = 0
     for i in range(len(x_protein)):
         print("Generating ij distances for protein-ligand pair", i + 1, "/", len(x_protein))
         ij_distance = generate_ij_distances(x_protein[i], x_ligand[i])
         max_ij_length = max(max_ij_length, len(ij_distance))
         x_ij_dist.append(ij_distance)
+        x_ij_dist_rev.append(list(reversed(ij_distance)))
     for i in range(len(x_ij_dist)):
         for j in range(len(x_ij_dist[i]), max_ij_length):
             x_ij_dist[i].append(0)
+            x_ij_dist_rev[i].append(0)
 
-    return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(y)
+    return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(x_ij_dist_rev), np.array(y)
 
 def load_data(dir_path):
     '''
@@ -175,7 +196,7 @@ def load_data(dir_path):
             y = float(line[38:46].strip())
             z = float(line[46:54].strip())
             atom_type = line[76:78].strip()
-            hydrophobicity = 1 if atom_type == 'C' else 0 # 2 for hydrophobic, 1 for polar
+            hydrophobicity = 2 if atom_type == 'C' else 1 # 2 for hydrophobic, 1 for polar
             atoms.append([x, y, z, hydrophobicity])
 
         return atoms

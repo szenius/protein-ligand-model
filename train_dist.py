@@ -25,7 +25,7 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.clf()
 
 def main():
-    x_seq_dist_2d, x_seq_dist_1d, x_ij_dist, y = get_training_data()
+    x_seq_dist_2d, x_seq_dist_1d, x_ij_dist, x_ij_dist_rev, y = get_training_data()
 
     # Get model
     if mode == 'mlp':
@@ -37,7 +37,8 @@ def main():
             model = mlp(x.shape[1])
     elif mode == 'lstm':
         if data == 'ij':
-            x = x_ij_dist
+            x = x_ij_dist + x_ij_dist_rev
+            y = y + y
             model = lstm(x.shape[1])
         else:
             x = x_seq_dist_2d
@@ -59,6 +60,12 @@ def main():
     # Plot loss vs accuracy
     plot([loss, acc], ['loss', 'acc'], ['b', 'r'], 'epoch', '', mode.upper()\
     + " Training", filename_prefix + '.png')
+
+    # Write loss and acc to file
+    with open(filename_prefix + '.txt', 'w') as f:
+        f.write(','.join(loss))
+        f.write('\n')
+        f.write(','.join(acc))
 
     # Save model
     model.save(filename_prefix + '.h5')
