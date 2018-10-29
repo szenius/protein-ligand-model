@@ -22,6 +22,7 @@ def main():
     model.summary()
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
     history = model.fit(x=x, y=y, epochs=epochs, verbose=1, batch_size=batch_size).history
+    model.save_weights('./{}_weights.h5'.format(model_name))
     plot_performance(history, model_name, epochs, batch_size)
 
 if __name__ == '__main__': main()
