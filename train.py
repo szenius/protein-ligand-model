@@ -12,13 +12,8 @@ set_random_seed(0)
 
 def main():
     epochs = 10
-<<<<<<< HEAD
     batch_size = 32
-    x_protein, x_ligand, y = get_training_data(save_training_data=True)
-=======
-    batch_size = 128
     x_protein, x_ligand, y = get_training_data(size=128, save_training_data=True)
->>>>>>> conv3d
     x = {'protein_input': x_protein, 'ligand_input': x_ligand}
     model_name = 'Dual-stream 3D Convolution Neural Network'
     model = get_model(model_name)(protein_data_shape=(None, None, None, 2), ligand_data_shape=(None, None, None, 2))

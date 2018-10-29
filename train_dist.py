@@ -25,12 +25,12 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.clf()
 
 def main():
-    x_seq_dist_2d, x_seq_dist_1d, x_ij_dist, x_ij_dist_rev, y = get_training_data()
+    x_seq_dist_2d, x_seq_dist_1d, x_ij_dist, x_ij_dist_rev, x_ij_dist_flat, y = get_training_data()
 
     # Get model
     if mode == 'mlp':
         if data == 'ij':
-            x = x_ij_dist
+            x = x_ij_dist_flat
             model = mlp(x.shape[1])
         else: 
             x = x_seq_dist_1d

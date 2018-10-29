@@ -111,12 +111,14 @@ def generate_training_data(training_data_dir_path):
     
     def generate_ij_distances(protein, ligand):
         empty_row = [0,0,0,0,0,0]
-        distances = []
+        distances_lstm = []
+        distances_mlp = []
         for i in range(len(protein)):
             for j in range(len(ligand)):
                 row = atom_vector(protein[i], ligand[j])
-                distances.append(row)
-        return distances
+                distances_lstm.append(row)
+                distances_mlp.extend(row)
+        return distances_lstm, distances_mlp
     
     ############################## Function body #############################
     protein_data, ligand_data, max_length = load_data(training_data_dir_path)
@@ -149,19 +151,26 @@ def generate_training_data(training_data_dir_path):
     # Generate ij distances
     x_ij_dist = []
     x_ij_dist_rev = []
+    x_ij_dist_flattened = []
     max_ij_length = 0
+    max_ij_flattened_length = 0
     for i in range(len(x_protein)):
         print("Generating ij distances for protein-ligand pair", i + 1, "/", len(x_protein))
-        ij_distance = generate_ij_distances(x_protein[i], x_ligand[i])
+        ij_distance, ij_distance_flattened = generate_ij_distances(x_protein[i], x_ligand[i])
         max_ij_length = max(max_ij_length, len(ij_distance))
+        max_ij_flattened_length = max(max_ij_flattened_length, len(ij_distance_flattened))
         x_ij_dist.append(ij_distance)
         x_ij_dist_rev.append(list(reversed(ij_distance)))
+        x_ij_dist_flattened.append(ij_distance_flattened)
     for i in range(len(x_ij_dist)):
         for j in range(len(x_ij_dist[i]), max_ij_length):
-            x_ij_dist[i].append(0)
-            x_ij_dist_rev[i].append(0)
+            x_ij_dist[i].append([0,0,0,0,0,0])
+            x_ij_dist_rev[i].append([0,0,0,0,0,0])
+    for i in range(len(x_ij_dist_flattened)):
+        for j in range(len(x_ij_dist_flattened), max_ij_flattened_length):
+            x_ij_dist_flattened[i].append(0)
 
-    return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(x_ij_dist_rev), np.array(y)
+    return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(x_ij_dist_rev), np.array(x_ij_dist_flattened), np.array(y)
 
 def load_data(dir_path):
     '''
