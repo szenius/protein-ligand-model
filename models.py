@@ -91,10 +91,6 @@ def dual_stream_C3DNN(protein_data_shape, ligand_data_shape, class_num=1):
     t = FC_layer(512)(t)
     t = Dropout(0.5)(t)
 
-<<<<<<< HEAD
-    t = Dense(class_num, activation='softmax')(t)
-=======
     t = FC_layer(class_num, activation='softmax')(t)
->>>>>>> conv3d
 
     return Model(inputs=[protein_input, ligand_input], outputs=t)

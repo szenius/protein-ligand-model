@@ -12,7 +12,7 @@ set_random_seed(0)
 
 def main():
     epochs = 10
-    batch_size = 128
+    batch_size = 32
     x_protein, x_ligand, y = get_training_data(save_training_data=True)
     x = {'protein_input': x_protein, 'ligand_input': x_ligand}
     model_name = 'Dual-stream 3D Convolution Neural Network'
