@@ -11,6 +11,7 @@ LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
 def get_training_data(
     training_data_dir_path = os.path.abspath('./training_data'),
     training_data_pkl_path_format = './training_data_{}.pkl',
+    start=-1, end=-1,
     size = 0, reprocess=False, save_training_data=True):
     '''
     Args:
@@ -25,7 +26,7 @@ def get_training_data(
     training_data_pkl_path = training_data_pkl_path_format.format(size if size > 0 else 'all')
     # If reprocessing training data or pkl does not exist
     if reprocess or not os.path.exists(training_data_pkl_path):
-        training_data = generate_training_data(training_data_dir_path, size=size)
+        training_data = generate_training_data(training_data_dir_path, size=size, start=start, end=end)
         if save_training_data:
             dump_pickle(training_data_pkl_path, training_data) # save data to disk
         return training_data
@@ -33,7 +34,7 @@ def get_training_data(
     else:
         return load_pickle(training_data_pkl_path)
 
-def generate_training_data(training_data_dir_path, size):
+def generate_training_data(training_data_dir_path, size, start, end):
     '''
     Args:
         training_data_dir_path (str): the training_data directory.
@@ -83,7 +84,7 @@ def generate_training_data(training_data_dir_path, size):
         return reshaped_data
 
     ############################## Function body #############################
-    protein_data, ligand_data, max_x, max_y, max_z = load_data(training_data_dir_path, size)
+    protein_data, ligand_data, max_x, max_y, max_z = load_data(training_data_dir_path, size, start, end)
 
     # Positive examples
     x_pos_protein = protein_data
@@ -109,7 +110,7 @@ def generate_training_data(training_data_dir_path, size):
 
     return np.array(x_protein), np.array(x_ligand), np.array(y)
 
-def load_data(dir_path, size):
+def load_data(dir_path, size, start, end):
     '''
     Args:
         dir_path (str): the training_data directory.
@@ -162,10 +163,13 @@ def load_data(dir_path, size):
     global_max_y = 0
     global_max_z = 0
     protein_filenames_list = ls(dir_path, lambda x: x.endswith(PROTEIN_FILENAME_SUFFIX))
-    if size > 0:
-        protein_filenames_list = protein_filenames_list[0:size]
+    # if size > 0:
+    #     protein_filenames_list = protein_filenames_list[0:size]
 
-    for protein_filename in tqdm(protein_filenames_list, desc='Reading {} pair complexes from {}'.format(size if size > 0 else 'all', dir_path)):
+    if start != -1 and end != -1:
+        protein_filenames_list = protein_filenames_list[start:end]
+
+    for protein_filename in tqdm(protein_filenames_list, desc='Reading {} pair complexes from {}'.format(end-start if start != -1 and end != -1 else 'all', dir_path)):
         index = get_index(protein_filename)
         protein, ligand, max_x, max_y, max_z = get_pair(index)
         protein_data.append(protein)
