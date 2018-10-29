@@ -170,7 +170,6 @@ def generate_training_data(training_data_dir_path, size):
     for i in range(len(x_ij_dist_flattened)):
         for j in range(len(x_ij_dist_flattened[i]), max_ij_flattened_length):
             x_ij_dist_flattened[i].append(0)
-    print(len(x_ij_dist_flattened), len(x_ij_dist_flattened[0]), len(x_ij_dist_flattened[1]))
 
     return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(x_ij_dist_rev), np.array(x_ij_dist_flattened), np.array(y)
 
