@@ -63,10 +63,9 @@ def generate_training_data(training_data_dir_path):
     
     def reshape_data(data, max_x, max_y, max_z, num_channels=2):
         result = []
-        for i in range(len(data)):
+        for complex_seq in data:
             reshaped = np.zeros(shape=(int(max_x), int(max_y), int(max_z), num_channels))
-            complex = data[i]
-            for atom in complex:
+            for atom in complex_seq:
                 x = int(atom[0])
                 y = int(atom[1])
                 z = int(atom[2])
@@ -128,22 +127,22 @@ def load_data(dir_path):
         content = [x.strip() for x in read_lines(file_path)]
 
         # Construct complex from atom data
-        atoms = []
+        complex_seq = []
         for line in content:
             x = float(line[30:38].strip())
             y = float(line[38:46].strip())
             z = float(line[46:54].strip())
             atom_type = line[76:78].strip()
             hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
-            atoms.append([x, y, z, hydrophobicity])
+            complex_seq.append([x, y, z, hydrophobicity])
         
-        np_atoms = np.asarray(atoms)
-        xyzh_mins = np.amin(np_atoms, axis=0)               # get all mins
-        xyzh_mins[-1] = 0                                   # force min of hydrophobicity to be 0 (just in case)
-        np_atoms -= xyzh_mins                               # translate values such that min is now zero
-        max_x, max_y, max_z, _ = np.amax(np_atoms, axis=0)  # the new maxes for x, y, z
-        atoms = np_atoms.tolist()                           # convert back to python list
-        return atoms, max_x, max_y, max_z
+        np_complex_seq = np.asarray(complex_seq)
+        xyzh_mins = np.amin(np_complex_seq, axis=0)                 # get all mins
+        xyzh_mins[-1] = 0                                           # force min of hydrophobicity to be 0 (just in case)
+        np_complex_seq -= xyzh_mins                                 # translate values such that min is now zero
+        max_x, max_y, max_z, _ = np.amax(np_complex_seq, axis=0)    # the new maxes for x, y, z
+        complex_seq = np_complex_seq.tolist()                       # convert back to python list
+        return complex_seq, max_x, max_y, max_z
 
     ############################## Function body #############################
     protein_data = []
@@ -157,8 +156,9 @@ def load_data(dir_path):
         protein_data.append(protein)
         ligand_data.append(ligand)
 
-        max_x = largest_x if largest_x > max_x else max_x
-        max_y = largest_y if largest_y > max_y else max_y
-        max_z = largest_z if largest_z > max_z else max_z
+        # Update maxes
+        max_x = max(largest_x, max_x)
+        max_y = max(largest_y, max_x)
+        max_z = max(largest_z, max_x)
 
     return protein_data, ligand_data, max_x, max_y, max_z
