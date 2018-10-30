@@ -54,7 +54,7 @@ def main():
     # Fit model
     batch_size = 32
     epochs = 10
-    history = model.fit(x=x, y=y, epochs=epochs, verbose=1, batch_size=batch_size)
+    history = model.fit(x=x, y=y, epochs=epochs, verbose=1, batch_size=batch_size, validation_split=0.33)
     loss = history.history['loss']
     acc = history.history['acc']
 

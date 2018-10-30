@@ -11,10 +11,10 @@ np.random.seed(0)
 set_random_seed(0)
 
 def main():
-    epochs = 10
-    batch_size = 16
-    split_ratio = 1 - 0.33
-    num_batches = int((3000 * split_ratio) / batch_size)
+    epochs = 1
+    batch_size = 32
+    val_split = 0.33
+    num_batches = int((3000 * (1 - val_split)) / batch_size)
 
     model_name = 'Dual-stream 3D Convolution Neural Network'
     model = get_model(model_name)(protein_data_shape=(None, None, None, 2), ligand_data_shape=(None, None, None, 2))

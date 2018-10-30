@@ -11,7 +11,7 @@ LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
 def get_training_data(
     training_data_dir_path = os.path.abspath('./training_data'),
     training_data_pkl_path_format = './training_data_{}.pkl',
-    start=-1, end=-1,
+    start=-1, end=-1, 
     size = 0, reprocess=False, save_training_data=True):
     '''
     Args:

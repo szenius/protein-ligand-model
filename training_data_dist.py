@@ -10,8 +10,9 @@ LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
 def get_training_data(
     training_data_dir_path = os.path.abspath('./training_data'),
     training_data_pkl_path = os.path.abspath('./training_data_dist.pkl'),
+    add_negative_examples=True,
     reprocess=False,
-    size=128):
+    size=512):
     '''
     Args:
         training_data_dir_path (str):  the training_data directory.
@@ -23,14 +24,14 @@ def get_training_data(
     '''
     # If reprocessing training data or pkl does not exist
     if reprocess or not os.path.exists(training_data_pkl_path):
-        training_data = generate_training_data(training_data_dir_path, size)
+        training_data = generate_training_data(training_data_dir_path, size, add_negative_examples)
         dump_pickle(training_data_pkl_path, training_data) # save data to disk
         return training_data
     # Else load from previously prepared training data
     else:
         return load_pickle(training_data_pkl_path)
 
-def generate_training_data(training_data_dir_path, size):
+def generate_training_data(training_data_dir_path, size, add_negative_examples):
     '''
     Args:
         training_data_dir_path (str): the training_data directory.
@@ -131,7 +132,8 @@ def generate_training_data(training_data_dir_path, size):
     y_pos = [1] * len(protein_data)
 
     # Negative examples
-    x_neg_protein, x_neg_ligand, y_neg = generate_negative_examples(protein_data, ligand_data)
+    if add_negative_examples:
+        x_neg_protein, x_neg_ligand, y_neg = generate_negative_examples(protein_data, ligand_data)
 
     # Concat to form training data
     # Note: shuffling is left to the training process
@@ -217,7 +219,7 @@ def load_data(dir_path, size):
     max_length = 0
     num_read = 0
     for protein_filename in ls(dir_path, lambda x: x.endswith(PROTEIN_FILENAME_SUFFIX)):
-        if num_read >= size:
+        if size != -1 and num_read >= size:
             break
         index = get_index(protein_filename)
         protein, ligand, length = get_pair(index)
