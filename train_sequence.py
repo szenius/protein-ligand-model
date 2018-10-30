@@ -19,4 +19,4 @@ class TrainSequence(Sequence):
         batch_x = self.x[idx * self.batch_size:(idx + 1) * self.batch_size] # batch of protein, ligand filepath pairs
         batch_y = self.y[idx * self.batch_size:(idx + 1) * self.batch_size]
         x_protein, x_ligand = load_batch(batch_x)
-        return {'protein_input': x_protein, 'ligand_input': x_ligand}, np.array(batch_y)
+        return {'protein_input': x_protein, 'ligand_input': x_ligand}, batch_y
