@@ -13,7 +13,7 @@ set_random_seed(0)
 
 def main():
     epochs = 10
-    batch_size = 60
+    batch_size = 128
     x_list, y_list = generate_training_data_lists()
     steps = len(x_list) / batch_size
     train_sequence = TrainSequence(x_list, y_list, batch_size)
