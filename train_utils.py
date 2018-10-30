@@ -48,7 +48,7 @@ def load_batch(batch_x):
     global_max_y = 0
     global_max_z = 0
     
-    for protein_path, ligand_path in tqdm(batch_x, desc='Reading {} pair complexes'.format(batch_size)):
+    for protein_path, ligand_path in batch_x:
         protein, ligand, max_x, max_y, max_z = get_pair(protein_path, ligand_path)
         protein_data.append(protein)
         ligand_data.append(ligand)
