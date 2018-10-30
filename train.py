@@ -16,13 +16,14 @@ def main():
     batch_size = 60
     x_list, y_list = generate_training_data_lists()
     steps = len(x_list) / batch_size
-    print('{} steps'.format(steps))
     train_sequence = TrainSequence(x_list, y_list, batch_size)
     model_name = 'Dual-stream 3D Convolution Neural Network'
     model = get_model(model_name)(protein_data_shape=(None, None, None, 2), ligand_data_shape=(None, None, None, 2))
+    
     plot_model(model, to_file='./{}.png'.format(model_name))
     print('Model Summary:')
     model.summary()
+    
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
     history = model.fit_generator(train_sequence, steps_per_epoch=steps, epochs=epochs, verbose=1).history
     dump_pickle('./history.pkl', history)
