@@ -13,8 +13,10 @@ set_random_seed(0)
 
 def main():
     epochs = 10
-    batch_size = 128
+    batch_size = 60
     x_list, y_list = generate_training_data_lists()
+    steps = len(x_list) / batch_size
+    print('{} steps'.format(steps))
     train_sequence = TrainSequence(x_list, y_list, batch_size)
     model_name = 'Dual-stream 3D Convolution Neural Network'
     model = get_model(model_name)(protein_data_shape=(None, None, None, 2), ligand_data_shape=(None, None, None, 2))
@@ -22,7 +24,7 @@ def main():
     print('Model Summary:')
     model.summary()
     model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
-    history = model.fit_generator(train_sequence, epochs=epochs, verbose=1).history
+    history = model.fit_generator(train_sequence, steps_per_epoch=steps, epochs=epochs, verbose=1).history
     dump_pickle('./history.pkl', history)
     model.save_weights('./{}_weights.h5'.format(model_name))
     plot_performance(history, model_name, epochs, batch_size)
