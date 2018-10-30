@@ -78,7 +78,7 @@ def generate_training_data(training_data_dir_path, size, add_negative_examples):
         return index
 
     def atom_vector(atom1, atom2=[0,0,0,0]):
-        result = [0,0,0,0,0,0]
+        result = [0,0,0,0,0]
         ed = euclidean_distance(atom1[:-1], atom2[:-1])
         result[type_index(atom1[-1], atom2[-1])] = ed
         return result
@@ -105,14 +105,14 @@ def generate_training_data(training_data_dir_path, size, add_negative_examples):
             distances_mlp.extend(row)
 
         # Pad with empty values to max length
-        empty_row = [0,0,0,0,0,0]
+        empty_row = [0,0,0,0,0]
         for i in range(len(distances_lstm), max_length):
             distances_lstm.append(empty_row)
             distances_mlp.extend(empty_row)
         return distances_mlp, distances_lstm
     
     def generate_ij_distances(protein, ligand):
-        empty_row = [0,0,0,0,0,0]
+        empty_row = [0,0,0,0,0]
         distances_lstm = []
         distances_mlp = []
         for i in range(len(protein)):
@@ -167,8 +167,8 @@ def generate_training_data(training_data_dir_path, size, add_negative_examples):
         x_ij_dist_flattened.append(ij_distance_flattened)
     for i in range(len(x_ij_dist)):
         for j in range(len(x_ij_dist[i]), max_ij_length):
-            x_ij_dist[i].append([0,0,0,0,0,0])
-            x_ij_dist_rev[i].append([0,0,0,0,0,0])
+            x_ij_dist[i].append([0,0,0,0,0])
+            x_ij_dist_rev[i].append([0,0,0,0,0])
     for i in range(len(x_ij_dist_flattened)):
         for j in range(len(x_ij_dist_flattened[i]), max_ij_flattened_length):
             x_ij_dist_flattened[i].append(0)
