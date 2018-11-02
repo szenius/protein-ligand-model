@@ -12,7 +12,7 @@ x_pro_list, x_lig_list = generate_testing_data_lists()
 
 # Generate predictions
 predictions = []
-output_data = np.zeros((len(x_pro_list), 11))
+output_data = np.zeros((len(x_pro_list), 11), dtype=int)
 for i in range(len(x_pro_list)):
     pro_filename = x_pro_list[i]
     prediction_row = []
@@ -33,9 +33,10 @@ for i in range(len(x_pro_list)):
 
     # Add top ten predictions to output_data
     prediction_row = np.array(prediction_row)
-    np.argsort(prediction_row)
-    np.flipud(prediction_row)
+    prediction_row = np.argsort(prediction_row)
+    prediction_row = np.flipud(prediction_row)
     output_data[i] = prediction_row[:11]
+    print(output_data[i])
 
 # Save to file
 np.savetxt(OUTPUT_FILENAME, output_data, delimiter="\t")
