@@ -1,76 +1,45 @@
 from training_data_dist import get_training_data
 from tensorflow import set_random_seed
 from keras import optimizers, losses
-from models import mlp, lstm
+from models import mlp
 import numpy as np
-import os
-import matplotlib.pyplot as plt
-import sys
-import csv
+from keras.utils import plot_model
+from utils import plot_performance, dump_pickle
+from train_utils_dist import generate_training_data_lists
+from train_sequence_dist import TrainSequence
 
 np.random.seed(0)
 set_random_seed(0)
 
-mode = sys.argv[1] # 'lstm' or 'mlp'
-data = sys.argv[2] if len(sys.argv) > 2 else 'seq1d' # 'ij' or 'seq1d' or 'seq2d'
-
-def plot(data, labels, colours, xlabel, ylabel, title, filename):
-    plt.figure()
-    for i in range(len(data)):
-        plt.plot(data[i], label=labels[i], c=colours[i])
-    plt.title(title)
-    plt.ylabel(ylabel)
-    plt.xlabel(xlabel)
-    plt.legend()
-    plt.savefig(filename, bbox_inches='tight')
-    plt.clf()
+mode = 'mlp'
+data = 'ij'
+batch_size = 16
+epochs = 10
+model_name = 'Baseline 5x20 MLP'
 
 def main():
-    x_seq_dist_2d, x_seq_dist_1d, x_ij_dist, x_ij_dist_rev, x_ij_dist_flat, y = get_training_data()
+    # Prepare data
+    x_list, y_list = generate_training_data_lists()
+    steps = len(x_list) / batch_size
+    train_sequence = TrainSequence(x_list, y_list, batch_size)
 
-    # Get model
-    if mode == 'mlp':
-        if data == 'ij':
-            x = x_ij_dist_flat
-            print(x.shape)
-            model = mlp(x.shape[1])
-        else: 
-            x = x_seq_dist_1d
-            model = mlp(x.shape[1])
-    elif mode == 'lstm':
-        if data == 'ij':
-            x = x_ij_dist + x_ij_dist_rev
-            y = y + y
-            model = lstm(x.shape[1])
-        else:
-            x = x_seq_dist_2d
-            print(x.shape[1])
-            model = lstm(x.shape[1])
-    else:
-        print("Invalid mode. Please use 'mlp' or 'lstm'.")
-        sys.exit()
-    model.compile(loss='binary_crossentropy', optimizer='adam', metrics=['acc'])
+    # Prepare model
+    model = mlp(10000)
+    model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['acc'])
+
+    # Plot model    
+    plot_model(model, to_file='./{}.png'.format(model_name))
 
     # Fit model
-    batch_size = 32
-    epochs = 10
-    history = model.fit(x=x, y=y, epochs=epochs, verbose=1, batch_size=batch_size, validation_split=0.33)
-    loss = history.history['loss']
-    acc = history.history['acc']
-
-    filename_prefix = '_'.join(['train', 'dist', mode, str(epochs), str(batch_size)])
+    history = model.fit_generator(train_sequence, epochs=epochs, steps_per_epoch=steps, verbose=1).history
 
     # Plot loss vs accuracy
-    plot([loss, acc], ['loss', 'acc'], ['b', 'r'], 'epoch', '', mode.upper()\
-    + " Training", filename_prefix + '.png')
+    plot_performance(history, model_name, epochs, batch_size)
 
     # Write loss and acc to file
-    with open(filename_prefix + '.csv', 'w') as f:
-        writer = csv.writer(f)
-        writer.writerow([l for l in loss])
-        writer.writerow([a for a in acc])
+    dump_pickle('./history.pkl', history)
 
     # Save model
-    model.save(filename_prefix + '.h5')
+    model.save_weights('./{}_weights.h5'.format(model_name))
 
 if __name__ == '__main__': main()

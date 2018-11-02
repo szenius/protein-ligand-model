@@ -41,11 +41,20 @@ def plot(data, labels, colours, xlabel, ylabel, title, filename):
     plt.ylabel(ylabel)
     plt.xlabel(xlabel)
     plt.legend()
-    plt.savefig(filename, bbox_inches='tight', dpi='300')
+    plt.savefig(filename, bbox_inches='tight')
     plt.close()
 
+def plot_single_data(data, color, xlabel, ylabel, title, filename):
+  plt.figure()
+  plt.plot(data, c=color)
+  plt.title(title)
+  plt.ylabel(ylabel)
+  plt.xlabel(xlabel)
+  plt.savefig(filename, bbox_inches='tight')
+  plt.close()
+
 def plot_performance(history, model_name, epochs, batch_size):
-  filename = 'train_dist_{}_{}_{}.png'.format(model_name, epochs, batch_size)
+  filename = 'train_dist_{}_{}_{}.png'.format(model_name, str(epochs), str(batch_size))
   plot(
     [history['loss'], history['acc']],  # data
     ['loss', 'acc'],                    # labels

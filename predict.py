@@ -1,76 +1,48 @@
 import sys
-from keras.models import load_model
-import numpy as np
 from predict_util import *
-from models import get_model
+import os
+import numpy as np
 
 MLP = 'mlp'
-LSTM = 'lstm'
 CONV = 'conv'
+MLP_MAX_LENGTH = 10000
 
-TEST_DATA_PATH = os.path.abspath('./testing_data')
 OUTPUT_FILENAME = "test_predictions.txt"
-
 HEADER = '\t'.join(["pro_id", "lig1_id", "lig2_id", "lig3_id", "lig4_id", "lig5_id", "lig6_id", "lig7_id", "lig8_id", "lig9_id", "lig10_id", ])
 
-mode = sys.argv[1] # 'mlp', 'lstm', 'conv'
+mode = sys.argv[1] # 'mlp', 'conv'
 
-# Load model
-if mode == MLP:
-    model = load_model('train_dist_mlp_10_32_337824.h5')
-elif mode == LSTM:
-    model = load_model('train_dist_lstm_10_32.h5')
-elif mode == CONV:
-    model = get_model('Dual-stream 3D Convolution Neural Network')
-    model.load_weights('###.h5') # TODO:
-else:
-    print("Invalid mode {}".format(mode))
-print("Loaded {} model.".format(mode))
-
-# Read in all test data
-if mode == CONV:
-    protein_data, ligand_data, max_x, max_y, max_z = load_data_3d(TEST_DATA_PATH)
-else:
-    protein_data, ligand_data, max_length = load_data(TEST_DATA_PATH, -1)
-print("Loaded {} sets from testing data files.".format(len(protein_data)))
+model = load_mlp() if mode == MLP else load_conv()
+x_pro_list, x_lig_list = generate_testing_data_lists()
 
 # Generate predictions
 predictions = []
-output_data = np.zeros((len(protein_data), 11))
-for i in range(len(protein_data)):
+output_data = np.zeros((len(x_pro_list), 11))
+for i in range(len(x_pro_list)):
+    pro_filename = x_pro_list[i]
     prediction_row = []
-    x_protein = protein_data[i]
-    print("Generating predictions for protein {}".format(i))
+    pro_filename_full = os.path.abspath(os.path.join(TESTING_DATA_PATH, pro_filename))
+    print("Generating predictions for {}".format(pro_filename))
 
-    for j in range(len(ligand_data)):
-        x_ligand = ligand_data[j]
+    for lig_filename in x_lig_list:
+        lig_filename_full = os.path.abspath(os.path.join(TESTING_DATA_PATH, lig_filename))
+        x_list = np.concatenate(([[pro_filename_full]], [[lig_filename_full]]), axis=1)
 
+        # Preprocessing
         if mode == MLP:
-            # Preprocessing
-            not_required, x = generate_ij_distances(x_protein, x_ligand)
-            for i in range(len(x), 337824):
-                x.append(0)
-            x = np.array([x])
-
-            # Predict
-            result = model.predict(x)
-            prediction_row.append(result[0][0])
-
-        elif mode == LSTM:
-            not_required, x = generate_seq_distances(x_protein, x_ligand, 4615)
-            # LSTM TODO:
-
+            x = load_batch_dist(x_list)
         else:
-            # Preprocessing
-            x_protein = reshape_data(x_protein, max_x, max_y, max_z)
-            x_ligand = reshape_data(x_ligand, max_x, max_y, max_z)
-
-            # Predict
+            x_protein, x_ligand = load_batch(x_list)
             x = {'protein_input': x_protein, 'ligand_input': x_ligand}
-            result = model.predict(x)
-            prediction_row.append(result[0][0])
+
+        # Predict
+        result = model.predict(x)
+        prediction_row.append(result[0][0])
+
     # Add top ten predictions to output_data
-    prediction_row = list(reversed(sorted(prediction_row, key=float)))
+    prediction_row = np.array(prediction_row)
+    np.argsort(prediction_row)
+    np.flipud(prediction_row)
     output_data[i] = prediction_row[:11]
 
 # Save to file

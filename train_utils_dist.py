@@ -7,7 +7,34 @@ import gc
 
 PROTEIN_FILENAME_SUFFIX = '_pro_cg.pdb'
 LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb' 
-    
+
+def generate_ij_distances(protein, ligand):
+    empty_row = [0,0,0,0,0]
+    distances_mlp = []
+    for i in range(len(protein)):
+        for j in range(len(ligand)):
+            row = atom_vector(protein[i], ligand[j])
+            distances_mlp.extend(row)
+    return distances_mlp
+
+def euclidean_distance(v1, v2):
+    return np.linalg.norm(np.array(v1) - np.array(v2))
+
+def type_index(type1, type2):
+    min_type = min(type1, type2)
+    max_type = max(type1, type2)
+    if min_type == max_type:
+        index = min_type
+    else:
+        index = min_type + max_type + 2
+    return int(index) - 1
+
+def atom_vector(atom1, atom2=[0,0,0,0]):
+    result = [0,0,0,0,0]
+    ed = euclidean_distance(atom1[:-1], atom2[:-1])
+    result[type_index(atom1[-1], atom2[-1])] = ed
+    return result
+
 def generate_training_data_lists(dir_path = os.path.abspath('./training_data')):
     # Populate positive examples
     x_pos_pro_list = []
@@ -40,41 +67,27 @@ def generate_training_data_lists(dir_path = os.path.abspath('./training_data')):
     x_list = np.concatenate((x_pro_list, x_lig_list), axis=1)
     return x_list, y_list
 
-def load_batch(batch_x, max_dims=(25, 25, 25)):
+def load_batch(batch_x, max_dims=10000):
     batch_size = len(batch_x)
     protein_data = []
     ligand_data = []
-    global_max_x = 0
-    global_max_y = 0
-    global_max_z = 0
     
     for protein_path, ligand_path in batch_x:
         protein, ligand, max_x, max_y, max_z = get_pair(protein_path, ligand_path, max_dims)
         protein_data.append(protein)
         ligand_data.append(ligand)
 
-        # Update global maxes
-        global_max_x = max(max_x, global_max_x)
-        global_max_y = max(max_y, global_max_y)
-        global_max_z = max(max_z, global_max_z)
+    # Reshape data
+    flattened = []
+    for i in range(len(protein_data)):
+        ij_distance_flattened = generate_ij_distances(protein_data[i], ligand_data[i])
+        flattened.append(ij_distance_flattened)
+    for i in range(len(flattened)):
+        for j in range(len(flattened[i]), max_dims):
+            flattened[i].append(0)
+        flattened[i] = flattened[i][:max_dims]
     
-    if max_dims is None:
-        target_shape = (batch_size, int(global_max_x), int(global_max_y), int(global_max_z), 2)
-    else:
-        target_shape = (batch_size, max_dims[0], max_dims[1], max_dims[2], 2)
-    return format_data(protein_data, target_shape), format_data(ligand_data, target_shape) 
-
-def format_data(data, target_shape):
-    reshaped_data = np.zeros(target_shape)
-    for i in range(len(data)):
-        complex_seq = data[i]
-        for atom in complex_seq:
-            x = int(atom[0]) - 1
-            y = int(atom[1]) - 1
-            z = int(atom[2]) - 1
-            channel = int(atom[3])
-            reshaped_data[i][x][y][z][channel] = 1
-    return reshaped_data
+    return np.array(flattened)
 
 def downsample_complex(complex, max_x, max_y, max_z, max_dims):
     for atom in complex:
@@ -91,10 +104,6 @@ def get_pair(protein_path, ligand_path, max_dims):
     max_x = max(pro_max_x, lig_max_x)
     max_y = max(pro_max_y, lig_max_y)
     max_z = max(pro_max_z, lig_max_z)
-
-    # TODO: Experiment: Downsample
-    protein = downsample_complex(protein, max_x, max_y, max_z, max_dims)
-    ligand = downsample_complex(ligand, max_x, max_y, max_z, max_dims)
 
     return protein, ligand, max_x, max_y, max_z
 
@@ -139,10 +148,10 @@ def shuffle_data(x_pro_list, x_lig_list, y_list):
     shuffled_y_list = y_list[shuffled_index]
     return shuffled_x_pro_list, shuffled_x_lig_list, shuffled_y_list
 
-def generate_negative_pairings(x_pos_pro_list, x_pos_lig_list, ratio=1):
+def generate_negative_pairings(x_pos_pro_list, x_pos_lig_list):
     x_neg_pro_list = []
     x_neg_lig_list = []
-    y_neg = [0] * len(x_pos_pro_list) * ratio
+    y_neg = [0] * len(x_pos_pro_list)
     for i in range(len(x_pos_pro_list)):
         protein_filepath = x_pos_pro_list[i]
         neg_ligand_filepath = random_item(x_pos_lig_list, i)

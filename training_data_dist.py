@@ -12,7 +12,7 @@ def get_training_data(
     training_data_pkl_path = os.path.abspath('./training_data_dist.pkl'),
     add_negative_examples=True,
     reprocess=False,
-    size=512):
+    size=3000):
     '''
     Args:
         training_data_dir_path (str):  the training_data directory.
@@ -75,7 +75,7 @@ def generate_training_data(training_data_dir_path, size, add_negative_examples):
             index = min_type
         else:
             index = min_type + max_type + 2
-        return index
+        return index - 1
 
     def atom_vector(atom1, atom2=[0,0,0,0]):
         result = [0,0,0,0,0]
@@ -113,14 +113,12 @@ def generate_training_data(training_data_dir_path, size, add_negative_examples):
     
     def generate_ij_distances(protein, ligand):
         empty_row = [0,0,0,0,0]
-        distances_lstm = []
         distances_mlp = []
         for i in range(len(protein)):
             for j in range(len(ligand)):
                 row = atom_vector(protein[i], ligand[j])
-                distances_lstm.append(row)
                 distances_mlp.extend(row)
-        return distances_lstm, distances_mlp
+        return distances_mlp
     
     ############################## Function body #############################
     protein_data, ligand_data, max_length = load_data(training_data_dir_path, size)
@@ -142,38 +140,19 @@ def generate_training_data(training_data_dir_path, size, add_negative_examples):
     y = y_pos + y_neg
     print("Generated train set for protein and ligand.")
 
-    # Generate sequential distances
-    x_seq_dist_lstm = []
-    x_seq_dist_mlp = []
+    # Reshape data
+    flattened = []
+    max_flattened_length = 0
     for i in range(len(x_protein)):
-        print("Generating seq distances for protein-ligand pair", i + 1, "/", len(x_protein))
-        seq_dist_mlp, seq_dist_lstm = generate_seq_distances(x_protein[i], x_ligand[i], max_length)
-        x_seq_dist_mlp.append(seq_dist_mlp)
-        x_seq_dist_lstm.append(seq_dist_lstm)
+        print("Generating ij distances for protein-ligand pair {}/{}".format(i + 1, len(x_protein)))
+        ij_distance_flattened = generate_ij_distances(x_protein[i], x_ligand[i])
+        max_flattened_length = max(max_flattened_length, len(ij_distance_flattened))
+        flattened.append(ij_distance_flattened)
+    for i in range(len(flattened)):
+        for j in range(len(flattened[i]), max_flattened_length):
+            flattened[i].append(0)
 
-    # Generate ij distances
-    x_ij_dist = []
-    x_ij_dist_rev = []
-    x_ij_dist_flattened = []
-    max_ij_length = 0
-    max_ij_flattened_length = 0
-    for i in range(len(x_protein)):
-        print("Generating ij distances for protein-ligand pair", i + 1, "/", len(x_protein))
-        ij_distance, ij_distance_flattened = generate_ij_distances(x_protein[i], x_ligand[i])
-        max_ij_length = max(max_ij_length, len(ij_distance))
-        max_ij_flattened_length = max(max_ij_flattened_length, len(ij_distance_flattened))
-        x_ij_dist.append(ij_distance)
-        x_ij_dist_rev.append(list(reversed(ij_distance)))
-        x_ij_dist_flattened.append(ij_distance_flattened)
-    for i in range(len(x_ij_dist)):
-        for j in range(len(x_ij_dist[i]), max_ij_length):
-            x_ij_dist[i].append([0,0,0,0,0])
-            x_ij_dist_rev[i].append([0,0,0,0,0])
-    for i in range(len(x_ij_dist_flattened)):
-        for j in range(len(x_ij_dist_flattened[i]), max_ij_flattened_length):
-            x_ij_dist_flattened[i].append(0)
-
-    return np.array(x_seq_dist_lstm), np.array(x_seq_dist_mlp), np.array(x_ij_dist), np.array(x_ij_dist_rev), np.array(x_ij_dist_flattened), np.array(y)
+    return np.array(flattened), np.array(y)
 
 def load_data(dir_path, size):
     '''

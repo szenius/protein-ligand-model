@@ -1,85 +1,47 @@
-from utils import ls, load_pickle, dump_pickle, read_lines
-import numpy as np
-import random
 import os
-import sys
+import numpy as np
+from models import get_model, mlp
+from utils import ls, load_pickle, dump_pickle, read_lines
 
 PROTEIN_FILENAME_SUFFIX = '_pro_cg.pdb'
-LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb' 
+LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
+TESTING_DATA_PATH = './testing_data' 
+MLP_MAX_LENGTH = 10000
 
-def reshape_data(data, max_x, max_y, max_z, num_channels=2, desc=''):
-    data_len = len(data)
-    x_len = max_x + 1
-    y_len = max_y + 1
-    z_len = max_z + 1
-    reshaped_data = np.zeros((len(data), x_len, y_len, z_len, num_channels))
-    for i in tqdm(range(data_len), desc=desc):
-        complex_seq = data[i]
-        for atom in complex_seq:
-            x = int(atom[0])
-            y = int(atom[1])
-            z = int(atom[2])
-            channel = int(atom[3])
-            reshaped_data[i][x][y][z][channel] = 1
-    return reshaped_data
+def get_index(filename):
+    return filename.split('_')[0]
 
-def load_data_3d(dir_path):
-    '''
-    Args:
-        dir_path (str): the training_data directory.
-        size of training examples in dir_path to load. 0 indicates all
+def get_filenames(dir_path, suffix):
+    return ls(dir_path, lambda x: x.endswith(suffix))
 
-    Returns: 
-        protein_data (list): [ [[protein_x, protein_y, protein_z, protein_type], ... ] , ... ].
-        ligand_data (list): [ [[ligand_x, ligand_y, ligand_z, ligand_type], ... ] , ... ].
-        Where for the same index position in the respective lists, the corresponding protein and ligand is a receptive pair.
-    '''
-    ############################ Helper functions ############################
-    def get_index(filename):
-        return filename.split('_')[0]
-
-    def get_pair(index):
-        protein_path = os.path.join(dir_path, index + PROTEIN_FILENAME_SUFFIX)
-        ligand_path = os.path.join(dir_path, index + LIGAND_FILENAME_SUFFIX)
-        protein, pro_max_x, pro_max_y, pro_max_z = read_complex(protein_path)
-        ligand,  lig_max_x, lig_max_y, lig_max_z = read_complex(ligand_path)
-
-        # Resolve coordinate maxes for this pair
-        max_x = max(pro_max_x, lig_max_x)
-        max_y = max(pro_max_y, lig_max_y)
-        max_z = max(pro_max_z, lig_max_z)
-        return protein, ligand, max_x, max_y, max_z
-
-    def read_complex(file_path):
-        # Construct complex from atom data
-        complex_seq = []
-        for line in [x.strip() for x in read_lines(file_path)]:
-            x = float(line[30:38].strip())
-            y = float(line[38:46].strip())
-            z = float(line[46:54].strip())
-            atom_type = line[76:78].strip()
-            hydrophobicity = 1 if atom_type == 'C' else 0 # 1 for hydrophobic, 0 for polar
-            complex_seq.append([x, y, z, hydrophobicity])
+def generate_testing_data_lists(dir_path = os.path.abspath(TESTING_DATA_PATH)):
+    x_pro_list = get_filenames(dir_path, PROTEIN_FILENAME_SUFFIX)
+    x_lig_list = get_filenames(dir_path, LIGAND_FILENAME_SUFFIX)
         
-        np_complex_seq = np.asarray(complex_seq)
-        xyzh_mins = np.amin(np_complex_seq, axis=0)                 # get all mins
-        xyzh_mins[-1] = 0                                           # force min of hydrophobicity to be 0 (just in case)
-        np_complex_seq -= xyzh_mins                                 # translate values such that min is now zero
-        max_x, max_y, max_z, _ = np.amax(np_complex_seq, axis=0)    # the new maxes for x, y, z
-        complex_seq = np_complex_seq.tolist()                       # convert back to python list
-        return complex_seq, max_x, max_y, max_z
+    return x_pro_list, x_lig_list
 
-    ############################## Function body #############################
+def load_mlp(max_length=MLP_MAX_LENGTH):
+    model = mlp(MLP_MAX_LENGTH)
+    model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['acc'])
+    model.load_weights('conv1/Dual-stream 3D Convolution Neural Network_weights.h5') # TODO:
+    return model
+
+def load_conv():
+    model = get_model('Dual-stream 3D Convolution Neural Network')(protein_data_shape=(None, None, None, 2), ligand_data_shape=(None, None, None, 2))
+    model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['acc'])
+    model.load_weights('conv3/Dual-stream 3D Convolution Neural Network_weights.h5') # TODO:
+    return model
+
+def load_batch(batch_x, max_dims=(10, 10, 10)):
+    batch_size = len(batch_x)
     protein_data = []
     ligand_data = []
     global_max_x = 0
     global_max_y = 0
     global_max_z = 0
-    protein_filenames_list = ls(dir_path, lambda x: x.endswith(PROTEIN_FILENAME_SUFFIX))
-
-    for protein_filename in tqdm(protein_filenames_list, desc='Reading {} pair complexes from {}'.format(end-start if start != -1 and end != -1 else 'all', dir_path)):
-        index = get_index(protein_filename)
-        protein, ligand, max_x, max_y, max_z = get_pair(index)
+    
+    for protein_path, ligand_path in batch_x:
+        protein, ligand, max_x, max_y, max_z = get_pair(protein_path, ligand_path, downsample=True, max_dims=max_dims)
         protein_data.append(protein)
         ligand_data.append(ligand)
 
@@ -87,66 +49,49 @@ def load_data_3d(dir_path):
         global_max_x = max(max_x, global_max_x)
         global_max_y = max(max_y, global_max_y)
         global_max_z = max(max_z, global_max_z)
+    
+    if max_dims is None:
+        target_shape = (batch_size, int(global_max_x), int(global_max_y), int(global_max_z), 2)
+    else:
+        target_shape = (batch_size, max_dims[0], max_dims[1], max_dims[2], 2)
+    return format_data(protein_data, target_shape), format_data(ligand_data, target_shape) 
 
-    return protein_data, ligand_data, global_max_x, global_max_y, global_max_z
-
-def load_data(dir_path, size):
-    '''
-    Args:
-        dir_path (str): the training_data directory.
-
-    Returns: 
-        protein_data (list): [[protein_x_list, protein_y_list, protein_z_list, protein_type_list], ... ].
-        ligand_data (list): [[ligand_x_list, ligand_y_list, ligand_z_list, ligand_type_list], ... ].
-        Where for the same index position in the respective lists, the corresponding protein and ligand is a receptive pair.
-    '''
-    ############################ Helper functions ############################
-    def get_index(filename):
-        return filename.split('_')[0]
-
-    def get_pair(index):
-        protein_path = os.path.join(dir_path, index + PROTEIN_FILENAME_SUFFIX)
-        ligand_path = os.path.join(dir_path, index + LIGAND_FILENAME_SUFFIX)
-        protein = read_complex(protein_path)
-        ligand = read_complex(ligand_path)
-        return protein, ligand, max(len(protein), len(ligand))
-
-    def read_complex(file_path):
-        # Read atom data from file
-        content = [x.strip() for x in read_lines(file_path)]
-
-        # Construct complex from atom data
-        atoms = []
-
-        for line in content:
-            splitted_line = line.strip().split('\t')
-            x = float(splitted_line[0])
-            y = float(splitted_line[1])
-            z = float(splitted_line[2])
-            atom_type = splitted_line[3].strip()
-            hydrophobicity = 2 if atom_type == 'h' else 1 # 2 for hydrophobic, 1 for polar
-            atoms.append([x, y, z, hydrophobicity])
-
-        return atoms
-
-    ############################## Function body #############################
+def load_batch_dist(batch_x, max_dims=10000):
+    batch_size = len(batch_x)
     protein_data = []
     ligand_data = []
-    max_length = 0
-    num_read = 0
-    for protein_filename in ls(dir_path, lambda x: x.endswith(PROTEIN_FILENAME_SUFFIX)):
-        if size != -1 and num_read >= size:
-            break
-        index = get_index(protein_filename)
-        protein, ligand, length = get_pair(index)
+    
+    for protein_path, ligand_path in batch_x:
+        protein, ligand, max_x, max_y, max_z = get_pair(protein_path, ligand_path, types_1based=True)
         protein_data.append(protein)
         ligand_data.append(ligand)
-        max_length = length if length > max_length else max_length
-        num_read += 1
-    return protein_data, ligand_data, max_length
 
-def euclidean_distance(v1, v2):
-    return np.linalg.norm(np.array(v1) - np.array(v2))
+    # Reshape data
+    flattened = []
+    for i in range(len(protein_data)):
+        ij_distance_flattened = generate_ij_distances(protein_data[i], ligand_data[i])
+        flattened.append(ij_distance_flattened)
+    for i in range(len(flattened)):
+        for j in range(len(flattened[i]), max_dims):
+            flattened[i].append(0)
+        flattened[i] = flattened[i][:max_dims]
+    
+    return np.array(flattened)
+
+def generate_ij_distances(protein, ligand):
+    empty_row = [0,0,0,0,0]
+    distances_mlp = []
+    for i in range(len(protein)):
+        for j in range(len(ligand)):
+            row = atom_vector(protein[i], ligand[j])
+            distances_mlp.extend(row)
+    return distances_mlp
+
+def atom_vector(atom1, atom2=[0,0,0,0]):
+    result = [0,0,0,0,0]
+    ed = euclidean_distance(atom1[:-1], atom2[:-1])
+    result[type_index(atom1[-1], atom2[-1])] = ed
+    return result
 
 def type_index(type1, type2):
     min_type = min(type1, type2)
@@ -155,49 +100,66 @@ def type_index(type1, type2):
         index = min_type
     else:
         index = min_type + max_type + 2
-    return index
+    return int(index) - 1
 
-def atom_vector(atom1, atom2=[0,0,0,0]):
-    result = [0,0,0,0,0,0]
-    ed = euclidean_distance(atom1[:-1], atom2[:-1])
-    result[type_index(atom1[-1], atom2[-1])] = ed
-    return result
+def euclidean_distance(v1, v2):
+    return np.linalg.norm(np.array(v1) - np.array(v2))
 
-def generate_seq_distances(protein, ligand, max_length):
-    distances_mlp = []
-    distances_lstm = []
+def get_pair(protein_path, ligand_path, downsample=False, types_1based=False, max_dims=(100,100,100)):
+    protein, pro_max_x, pro_max_y, pro_max_z = read_complex(protein_path, types_1based)
+    ligand,  lig_max_x, lig_max_y, lig_max_z = read_complex(ligand_path, types_1based)
 
-    # Get distance vectors between each atom in sequential order
-    min_num = min(len(protein), len(ligand))
-    for i in range(min_num):
-        row = atom_vector(protein[i], ligand[i])
-        distances_lstm.append(row)
-        distances_mlp.extend(row)
-    
-    # For uneven lengths of protein and ligand atoms, pad till max of either length.
-    for i in range(min_num, len(protein)):
-        row = atom_vector(protein[i])
-        distances_lstm.append(row)
-        distances_mlp.extend(row)
-    for i in range(min_num, len(ligand)):
-        row = atom_vector(ligand[i])
-        distances_lstm.append(row)
-        distances_mlp.extend(row)
+    # Resolve coordinate maxes for this pair
+    max_x = max(pro_max_x, lig_max_x)
+    max_y = max(pro_max_y, lig_max_y)
+    max_z = max(pro_max_z, lig_max_z)
 
-    # Pad with empty values to max length
-    empty_row = [0,0,0,0,0,0]
-    for i in range(len(distances_lstm), max_length):
-        distances_lstm.append(empty_row)
-        distances_mlp.extend(empty_row)
-    return distances_mlp, distances_lstm
+    # Downsample
+    if downsample is True:
+        protein = downsample_complex(protein, max_x, max_y, max_z, max_dims)
+        ligand = downsample_complex(ligand, max_x, max_y, max_z, max_dims)
 
-def generate_ij_distances(protein, ligand):
-    empty_row = [0,0,0,0,0,0]
-    distances_lstm = []
-    distances_mlp = []
-    for i in range(len(protein)):
-        for j in range(len(ligand)):
-            row = atom_vector(protein[i], ligand[j])
-            distances_lstm.append(row)
-            distances_mlp.extend(row)
-    return distances_lstm, distances_mlp
+    return protein, ligand, max_x, max_y, max_z
+
+def read_complex(file_path, types_1based):
+    # Read atom data from file
+    content = [x.strip() for x in read_lines(file_path)]
+
+    # Construct complex from atom data
+    complex_seq = []
+    for line in content:
+        splitted_line = line.strip().split('\t')
+        x = float(splitted_line[0])
+        y = float(splitted_line[1])
+        z = float(splitted_line[2])
+        atom_type = splitted_line[3].strip()
+        hydrophobicity = 2 if atom_type == 'h' else 1 # 2 for hydrophobic, 1 for polar
+        if types_1based is False: hydrophobicity -= 1
+        complex_seq.append([x, y, z, hydrophobicity])
+
+    np_complex_seq = np.asarray(complex_seq)
+    xyzh_mins = np.amin(np_complex_seq, axis=0)                 # get all mins
+    xyzh_mins[-1] = 0                                           # force min of hydrophobicity to be 0 (just in case)
+    np_complex_seq -= xyzh_mins                                 # translate values such that min is now zero
+    max_x, max_y, max_z, _ = np.amax(np_complex_seq, axis=0)    # the new maxes for x, y, z
+    complex_seq = np_complex_seq.tolist()                       # convert back to python list
+    return complex_seq, max_x, max_y, max_z
+
+def format_data(data, target_shape):
+    reshaped_data = np.zeros(target_shape)
+    for i in range(len(data)):
+        complex_seq = data[i]
+        for atom in complex_seq:
+            x = int(atom[0]) - 1
+            y = int(atom[1]) - 1
+            z = int(atom[2]) - 1
+            channel = int(atom[3])
+            reshaped_data[i][x][y][z][channel] = 1
+    return reshaped_data
+
+def downsample_complex(complex, max_x, max_y, max_z, max_dims):
+    for atom in complex:
+        atom[0] = atom[0] / max_x * max_dims[0] if max_x != 0 else 0
+        atom[1] = atom[1] / max_y * max_dims[1] if max_y != 0 else 0
+        atom[2] = atom[2] / max_z * max_dims[2] if max_z != 0 else 0
+    return complex
