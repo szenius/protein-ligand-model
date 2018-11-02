@@ -3,10 +3,12 @@ import numpy as np
 from models import get_model, mlp
 from utils import ls, load_pickle, dump_pickle, read_lines
 
+###### CHANGE THESE BEFORE RUNNING ######
+TESTING_DATA_PATH = './testing_data' 
+WEIGHTS_FILENAME = 'conv batch 128 epoch 10 dim 15/Dual-stream 3D Convolution Neural Network_weights.h5'
+
 PROTEIN_FILENAME_SUFFIX = '_pro_cg.pdb'
 LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
-TESTING_DATA_PATH = './testing_data' 
-MLP_MAX_LENGTH = 10000
 
 def get_index(filename):
     return filename.split('_')[0]
@@ -20,16 +22,10 @@ def generate_testing_data_lists(dir_path = os.path.abspath(TESTING_DATA_PATH)):
         
     return x_pro_list, x_lig_list
 
-def load_mlp(max_length=MLP_MAX_LENGTH):
-    model = mlp(MLP_MAX_LENGTH)
-    model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['acc'])
-    model.load_weights('conv1/Dual-stream 3D Convolution Neural Network_weights.h5') # TODO:
-    return model
-
 def load_conv():
     model = get_model('Dual-stream 3D Convolution Neural Network')(protein_data_shape=(None, None, None, 2), ligand_data_shape=(None, None, None, 2))
     model.compile(loss='binary_crossentropy', optimizer='sgd', metrics=['acc'])
-    model.load_weights('conv3/Dual-stream 3D Convolution Neural Network_weights.h5') # TODO:
+    model.load_weights(WEIGHTS_FILENAME) # TODO:
     return model
 
 def load_batch(batch_x, max_dims=(10, 10, 10)):
@@ -55,55 +51,6 @@ def load_batch(batch_x, max_dims=(10, 10, 10)):
     else:
         target_shape = (batch_size, max_dims[0], max_dims[1], max_dims[2], 2)
     return format_data(protein_data, target_shape), format_data(ligand_data, target_shape) 
-
-def load_batch_dist(batch_x, max_dims=10000):
-    batch_size = len(batch_x)
-    protein_data = []
-    ligand_data = []
-    
-    for protein_path, ligand_path in batch_x:
-        protein, ligand, max_x, max_y, max_z = get_pair(protein_path, ligand_path, types_1based=True)
-        protein_data.append(protein)
-        ligand_data.append(ligand)
-
-    # Reshape data
-    flattened = []
-    for i in range(len(protein_data)):
-        ij_distance_flattened = generate_ij_distances(protein_data[i], ligand_data[i])
-        flattened.append(ij_distance_flattened)
-    for i in range(len(flattened)):
-        for j in range(len(flattened[i]), max_dims):
-            flattened[i].append(0)
-        flattened[i] = flattened[i][:max_dims]
-    
-    return np.array(flattened)
-
-def generate_ij_distances(protein, ligand):
-    empty_row = [0,0,0,0,0]
-    distances_mlp = []
-    for i in range(len(protein)):
-        for j in range(len(ligand)):
-            row = atom_vector(protein[i], ligand[j])
-            distances_mlp.extend(row)
-    return distances_mlp
-
-def atom_vector(atom1, atom2=[0,0,0,0]):
-    result = [0,0,0,0,0]
-    ed = euclidean_distance(atom1[:-1], atom2[:-1])
-    result[type_index(atom1[-1], atom2[-1])] = ed
-    return result
-
-def type_index(type1, type2):
-    min_type = min(type1, type2)
-    max_type = max(type1, type2)
-    if min_type == max_type:
-        index = min_type
-    else:
-        index = min_type + max_type + 2
-    return int(index) - 1
-
-def euclidean_distance(v1, v2):
-    return np.linalg.norm(np.array(v1) - np.array(v2))
 
 def get_pair(protein_path, ligand_path, downsample=False, types_1based=False, max_dims=(100,100,100)):
     protein, pro_max_x, pro_max_y, pro_max_z = read_complex(protein_path, types_1based)

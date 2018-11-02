@@ -1,18 +1,13 @@
 import sys
-from predict_util import *
+from predict_utils import *
 import os
 import numpy as np
-
-MLP = 'mlp'
-CONV = 'conv'
-MLP_MAX_LENGTH = 10000
 
 OUTPUT_FILENAME = "test_predictions.txt"
 HEADER = '\t'.join(["pro_id", "lig1_id", "lig2_id", "lig3_id", "lig4_id", "lig5_id", "lig6_id", "lig7_id", "lig8_id", "lig9_id", "lig10_id", ])
 
-mode = sys.argv[1] # 'mlp', 'conv'
-
-model = load_mlp() if mode == MLP else load_conv()
+# Load model and data
+model = load_conv()
 x_pro_list, x_lig_list = generate_testing_data_lists()
 
 # Generate predictions
@@ -29,11 +24,8 @@ for i in range(len(x_pro_list)):
         x_list = np.concatenate(([[pro_filename_full]], [[lig_filename_full]]), axis=1)
 
         # Preprocessing
-        if mode == MLP:
-            x = load_batch_dist(x_list)
-        else:
-            x_protein, x_ligand = load_batch(x_list)
-            x = {'protein_input': x_protein, 'ligand_input': x_ligand}
+        x_protein, x_ligand = load_batch(x_list)
+        x = {'protein_input': x_protein, 'ligand_input': x_ligand}
 
         # Predict
         result = model.predict(x)

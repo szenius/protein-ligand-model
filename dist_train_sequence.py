@@ -1,4 +1,4 @@
-from train_utils_dist import load_batch
+from dist_train_utils import load_batch
 from keras.utils import Sequence
 from tqdm import tqdm
 import numpy as np

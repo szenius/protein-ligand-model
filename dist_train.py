@@ -1,12 +1,11 @@
-from training_data_dist import get_training_data
 from tensorflow import set_random_seed
 from keras import optimizers, losses
 from models import mlp
 import numpy as np
 from keras.utils import plot_model
 from utils import plot_performance, dump_pickle
-from train_utils_dist import generate_training_data_lists
-from train_sequence_dist import TrainSequence
+from dist_train_utils import generate_training_data_lists
+from dist_train_sequence import TrainSequence
 
 np.random.seed(0)
 set_random_seed(0)
