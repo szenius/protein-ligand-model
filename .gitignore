@@ -6,6 +6,11 @@
 *.png
 *testing_data_release/*
 *.code-workspace
+conv*/
+mlp/
+test_predictions.txt
+*testing_data/*
+archived/
 
 # Byte-compiled / optimized / DLL files
 __pycache__/

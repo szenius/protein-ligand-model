@@ -13,7 +13,7 @@ np.random.seed(0)
 set_random_seed(0)
 
 def main():
-    epochs = 10
+    epochs = 20
     batch_size = 128
     x_list, y_list = generate_training_data_lists()
     steps = len(x_list) / batch_size

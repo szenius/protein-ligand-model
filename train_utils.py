@@ -40,7 +40,7 @@ def generate_training_data_lists(dir_path = os.path.abspath('./training_data')):
     x_list = np.concatenate((x_pro_list, x_lig_list), axis=1)
     return x_list, y_list
 
-def load_batch(batch_x, max_dims=(25, 25, 25)):
+def load_batch(batch_x, max_dims=(10, 10, 10)):
     batch_size = len(batch_x)
     protein_data = []
     ligand_data = []
@@ -139,13 +139,20 @@ def shuffle_data(x_pro_list, x_lig_list, y_list):
     shuffled_y_list = y_list[shuffled_index]
     return shuffled_x_pro_list, shuffled_x_lig_list, shuffled_y_list
 
-def generate_negative_pairings(x_pos_pro_list, x_pos_lig_list, ratio=1):
+def generate_negative_pairings(x_pos_pro_list, x_pos_lig_list, ratio=5):
     x_neg_pro_list = []
     x_neg_lig_list = []
-    y_neg = [0] * len(x_pos_pro_list) * ratio
+    num_negative_samples = len(x_pos_pro_list) * ratio
+    y_neg = [0] * num_negative_samples
     for i in range(len(x_pos_pro_list)):
         protein_filepath = x_pos_pro_list[i]
         neg_ligand_filepath = random_item(x_pos_lig_list, i)
+        x_neg_pro_list.append(protein_filepath)
+        x_neg_lig_list.append(neg_ligand_filepath)
+    for i in range(len(x_pos_pro_list), num_negative_samples):
+        rand_index = random.randint(0, len(x_pos_pro_list) - 1)
+        protein_filepath = x_pos_pro_list[rand_index]
+        neg_ligand_filepath = random_item(x_pos_lig_list, rand_index)
         x_neg_pro_list.append(protein_filepath)
         x_neg_lig_list.append(neg_ligand_filepath)
     return x_neg_pro_list, x_neg_lig_list, y_neg
