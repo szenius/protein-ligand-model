@@ -5,7 +5,7 @@ from utils import ls, load_pickle, dump_pickle, read_lines
 
 ###### CHANGE THESE BEFORE RUNNING ######
 TESTING_DATA_PATH = './testing_data' 
-WEIGHTS_FILENAME = 'conv batch 128 epoch 10 dim 15/Dual-stream 3D Convolution Neural Network_weights.h5'
+WEIGHTS_FILENAME = 'Dual-stream 3D Convolution Neural Network_weights.h5'
 
 PROTEIN_FILENAME_SUFFIX = '_pro_cg.pdb'
 LIGAND_FILENAME_SUFFIX = '_lig_cg.pdb'
